@@ -1,0 +1,36 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 448cae7d26082364cb36019a59d1ec7f, type: 3}
+  m_Name: 01_Common_FireBall
+  m_EditorClassIdentifier: 
+  id: fire_ball
+  rarity: 0
+  icon: {fileID: 21300000, guid: d856eb47290553749ae0f74c28da1741, type: 3}
+  maxLevel: 100
+  displayName: "\uD30C\uC774\uC5B4 \uBCFC"
+  description: "\uAC00\uC7A5 \uAC00\uAE4C\uC6B4 \uC801\uC5D0\uAC8C \uD654\uC5FC\uAD6C\uB97C
+    \uBC1C\uC0AC\uD574 \uBC18\uACBD 2.5m\uC5D0 \uACF5\uACA9\uB825\uC758 220% \uD53C\uD574\uB97C
+    \uC900\uB2E4."
+  behavior: 1
+  targetType: 0
+  cooldown: 4
+  damageMultiplier: 2.2
+  radius: 2.5
+  projectileCount: 1
+  duration: 0
+  tickInterval: 0.5
+  secondaryDamageMultiplier: 0
+  slowPercent: 0
+  pullStrength: 4
+  effectColor: {r: 1, g: 0.28, b: 0.06, a: 1}
+  ownedEffectType: 6
+  ownedEffectBaseValue: 0.5

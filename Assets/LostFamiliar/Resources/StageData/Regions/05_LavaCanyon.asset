@@ -1,0 +1,44 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ead90d58531fae24daa636763d7691b9, type: 3}
+  m_Name: 05_LavaCanyon
+  m_EditorClassIdentifier: 
+  id: magic_forest
+  displayName: "\uB9C8\uBC95 \uC232"
+  startStage: 1
+  endStage: 10
+  backgroundColor: {r: 0.08, g: 0.18, b: 0.12, a: 1}
+  spawnInterval: 0.65
+  spawnBatchSize: 3
+  maxAliveEnemies: 15
+  normalEnemies:
+  - enemy: {fileID: 11400000, guid: 11e42a5b1629b4f40a04539e69256573, type: 2}
+    weight: 6
+    unlockStageInRegion: 1
+  - enemy: {fileID: 11400000, guid: 397030ecf8e40384b98d6dcbe1f830ae, type: 2}
+    weight: 4
+    unlockStageInRegion: 4
+  - enemy: {fileID: 11400000, guid: 06a23ebb7458b6a44810f46a654861f6, type: 2}
+    weight: 2
+    unlockStageInRegion: 7
+  stageBosses:
+  - {fileID: 11400000, guid: 54d5a91b68df3324ebb97c3f200715da, type: 2}
+  - {fileID: 11400000, guid: 54d5a91b68df3324ebb97c3f200715da, type: 2}
+  - {fileID: 11400000, guid: 54d5a91b68df3324ebb97c3f200715da, type: 2}
+  - {fileID: 11400000, guid: a8e59302794e3ac429c891cb0e7c51c2, type: 2}
+  - {fileID: 11400000, guid: a8e59302794e3ac429c891cb0e7c51c2, type: 2}
+  - {fileID: 11400000, guid: a8e59302794e3ac429c891cb0e7c51c2, type: 2}
+  - {fileID: 11400000, guid: a8e59302794e3ac429c891cb0e7c51c2, type: 2}
+  - {fileID: 11400000, guid: b6aba9fa66e70874195ad7bff2d1b763, type: 2}
+  - {fileID: 11400000, guid: b6aba9fa66e70874195ad7bff2d1b763, type: 2}
+  - {fileID: 11400000, guid: b6aba9fa66e70874195ad7bff2d1b763, type: 2}
+  boss: {fileID: 11400000, guid: b6aba9fa66e70874195ad7bff2d1b763, type: 2}

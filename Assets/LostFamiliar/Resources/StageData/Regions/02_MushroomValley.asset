@@ -1,0 +1,44 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ead90d58531fae24daa636763d7691b9, type: 3}
+  m_Name: 02_MushroomValley
+  m_EditorClassIdentifier: 
+  id: magic_forest
+  displayName: "\uB9C8\uBC95 \uC232"
+  startStage: 1
+  endStage: 10
+  backgroundColor: {r: 0.08, g: 0.18, b: 0.12, a: 1}
+  spawnInterval: 0.65
+  spawnBatchSize: 3
+  maxAliveEnemies: 15
+  normalEnemies:
+  - enemy: {fileID: 11400000, guid: dd5ed912f3a0b3d43971ed2d1de24bf2, type: 2}
+    weight: 6
+    unlockStageInRegion: 1
+  - enemy: {fileID: 11400000, guid: 2ffcf54777ca48c4cb75024ec1231924, type: 2}
+    weight: 4
+    unlockStageInRegion: 4
+  - enemy: {fileID: 11400000, guid: 21b452deb5c4d0344b868d4efbf79a1e, type: 2}
+    weight: 2
+    unlockStageInRegion: 7
+  stageBosses:
+  - {fileID: 11400000, guid: 9f344c4c861098e49acdb8dae92b693b, type: 2}
+  - {fileID: 11400000, guid: 9f344c4c861098e49acdb8dae92b693b, type: 2}
+  - {fileID: 11400000, guid: 9f344c4c861098e49acdb8dae92b693b, type: 2}
+  - {fileID: 11400000, guid: 8b57483d8b08f654cbf72ad4c1238041, type: 2}
+  - {fileID: 11400000, guid: 8b57483d8b08f654cbf72ad4c1238041, type: 2}
+  - {fileID: 11400000, guid: 8b57483d8b08f654cbf72ad4c1238041, type: 2}
+  - {fileID: 11400000, guid: 8b57483d8b08f654cbf72ad4c1238041, type: 2}
+  - {fileID: 11400000, guid: 083d11447715c0146ab6197ab2039ffb, type: 2}
+  - {fileID: 11400000, guid: 083d11447715c0146ab6197ab2039ffb, type: 2}
+  - {fileID: 11400000, guid: 083d11447715c0146ab6197ab2039ffb, type: 2}
+  boss: {fileID: 11400000, guid: 083d11447715c0146ab6197ab2039ffb, type: 2}

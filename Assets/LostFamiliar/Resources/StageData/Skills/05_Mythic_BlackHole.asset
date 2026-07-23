@@ -1,0 +1,36 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 448cae7d26082364cb36019a59d1ec7f, type: 3}
+  m_Name: 05_Mythic_BlackHole
+  m_EditorClassIdentifier: 
+  id: black_hole
+  rarity: 4
+  icon: {fileID: 21300000, guid: 6ce8485537fd8e6499b118ab475a217a, type: 3}
+  maxLevel: 100
+  displayName: "\uBE14\uB799\uD640"
+  description: "4\uCD08\uAC04 \uC801\uC744 \uB04C\uC5B4\uB2F9\uAE30\uBA70 0.2\uCD08\uB9C8\uB2E4
+    \uACF5\uACA9\uB825\uC758 70% \uD53C\uD574\uB97C \uC8FC\uACE0 \uC885\uB8CC \uC2DC
+    600% \uD53C\uD574\uB97C \uC900\uB2E4."
+  behavior: 8
+  targetType: 1
+  cooldown: 22
+  damageMultiplier: 0.7
+  radius: 4
+  projectileCount: 1
+  duration: 4
+  tickInterval: 0.2
+  secondaryDamageMultiplier: 6
+  slowPercent: 0
+  pullStrength: 4
+  effectColor: {r: 0.16, g: 0.03, b: 0.28, a: 1}
+  ownedEffectType: 4
+  ownedEffectBaseValue: 10

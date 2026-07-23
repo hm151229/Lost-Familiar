@@ -1,0 +1,24 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 03aa095394acd734ba0985b800f9ae78, type: 3}
+  m_Name: DefaultStageDatabase
+  m_EditorClassIdentifier: 
+  contentVersion: 3
+  balance: {fileID: 11400000, guid: 5b590cc17c609604c9d327c9abe09c3c, type: 2}
+  guideFingerSprite: {fileID: 21300000, guid: 2299b5ba05af2c0498c6a95ee056db98, type: 3}
+  regions:
+  - {fileID: 11400000, guid: 143b6b2805fc6d04d84490df85f142af, type: 2}
+  - {fileID: 11400000, guid: 8f5c4e7dfcc382045a780fe4f1b8f8ad, type: 2}
+  - {fileID: 11400000, guid: 4b982329d628d4f469302151653ec0b7, type: 2}
+  - {fileID: 11400000, guid: 4c4fdfd006b19bf4c8ce6cdbf54527cc, type: 2}
+  - {fileID: 11400000, guid: ad85b21495cdfce419800f546c0e1e1c, type: 2}
+  specialStages: []

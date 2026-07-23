@@ -1,0 +1,23 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a1e517813e924c8d95ce132754906b34, type: 3}
+  m_Name: 01_Common_Head_01
+  m_EditorClassIdentifier: 
+  id: common_head_01
+  displayName: "\uB0A1\uC740 \uB9C8\uB140\uBAA8\uC790"
+  type: 0
+  rarity: 0
+  icon: {fileID: 21300000, guid: 9927a1469528e6749ab28ac5333cc2a5, type: 3}
+  maxLevel: 100
+  effects:
+  - type: 3
+    baseValue: 1

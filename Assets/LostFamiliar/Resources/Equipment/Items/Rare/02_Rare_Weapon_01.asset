@@ -1,0 +1,23 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a1e517813e924c8d95ce132754906b34, type: 3}
+  m_Name: 02_Rare_Weapon_01
+  m_EditorClassIdentifier: 
+  id: rare_weapon_01
+  displayName: "\uC218\uC815 \uB9C8\uBC95\uBD09"
+  type: 4
+  rarity: 1
+  icon: {fileID: 21300000, guid: fa0db865f7b297548aa58588c5418086, type: 3}
+  maxLevel: 100
+  effects:
+  - type: 0
+    baseValue: 5

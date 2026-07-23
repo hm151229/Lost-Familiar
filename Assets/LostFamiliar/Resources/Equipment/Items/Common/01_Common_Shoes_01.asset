@@ -1,0 +1,23 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a1e517813e924c8d95ce132754906b34, type: 3}
+  m_Name: 01_Common_Shoes_01
+  m_EditorClassIdentifier: 
+  id: common_shoes_01
+  displayName: "\uB0A1\uC740 \uAC00\uC8FD\uC2E0"
+  type: 2
+  rarity: 0
+  icon: {fileID: 21300000, guid: 7173a567d3c2973449962adf073986ea, type: 3}
+  maxLevel: 100
+  effects:
+  - type: 2
+    baseValue: 4

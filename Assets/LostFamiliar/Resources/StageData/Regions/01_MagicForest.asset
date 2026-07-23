@@ -1,0 +1,44 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ead90d58531fae24daa636763d7691b9, type: 3}
+  m_Name: 01_MagicForest
+  m_EditorClassIdentifier: 
+  id: magic_forest
+  displayName: "\uB9C8\uBC95 \uC232"
+  startStage: 1
+  endStage: 10
+  backgroundColor: {r: 0.08, g: 0.18, b: 0.12, a: 1}
+  spawnInterval: 0.65
+  spawnBatchSize: 3
+  maxAliveEnemies: 15
+  normalEnemies:
+  - enemy: {fileID: 11400000, guid: bad5de6b47718ca40ba423c4b706f12e, type: 2}
+    weight: 6
+    unlockStageInRegion: 1
+  - enemy: {fileID: 11400000, guid: c176e63694e32dd448a31bbdb4616e61, type: 2}
+    weight: 4
+    unlockStageInRegion: 4
+  - enemy: {fileID: 11400000, guid: 886330e3828e1304e97794a45e8e823c, type: 2}
+    weight: 2
+    unlockStageInRegion: 7
+  stageBosses:
+  - {fileID: 11400000, guid: 00ca4f3dabe9d684f9085f351dce2246, type: 2}
+  - {fileID: 11400000, guid: 00ca4f3dabe9d684f9085f351dce2246, type: 2}
+  - {fileID: 11400000, guid: 00ca4f3dabe9d684f9085f351dce2246, type: 2}
+  - {fileID: 11400000, guid: 9cecf93ac6da1d5499948178f9667940, type: 2}
+  - {fileID: 11400000, guid: 9cecf93ac6da1d5499948178f9667940, type: 2}
+  - {fileID: 11400000, guid: 9cecf93ac6da1d5499948178f9667940, type: 2}
+  - {fileID: 11400000, guid: 9cecf93ac6da1d5499948178f9667940, type: 2}
+  - {fileID: 11400000, guid: 6dd56a959d5dd054d9eeedea83a3158b, type: 2}
+  - {fileID: 11400000, guid: 6dd56a959d5dd054d9eeedea83a3158b, type: 2}
+  - {fileID: 11400000, guid: 6dd56a959d5dd054d9eeedea83a3158b, type: 2}
+  boss: {fileID: 11400000, guid: 6dd56a959d5dd054d9eeedea83a3158b, type: 2}

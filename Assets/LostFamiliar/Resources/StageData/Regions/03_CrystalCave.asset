@@ -1,0 +1,44 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ead90d58531fae24daa636763d7691b9, type: 3}
+  m_Name: 03_CrystalCave
+  m_EditorClassIdentifier: 
+  id: magic_forest
+  displayName: "\uB9C8\uBC95 \uC232"
+  startStage: 1
+  endStage: 10
+  backgroundColor: {r: 0.08, g: 0.18, b: 0.12, a: 1}
+  spawnInterval: 0.65
+  spawnBatchSize: 3
+  maxAliveEnemies: 15
+  normalEnemies:
+  - enemy: {fileID: 11400000, guid: 5a6115af6924ef448a15f56c76cd3b34, type: 2}
+    weight: 6
+    unlockStageInRegion: 1
+  - enemy: {fileID: 11400000, guid: 0ba110c1db2d717408334015a51d0a19, type: 2}
+    weight: 4
+    unlockStageInRegion: 4
+  - enemy: {fileID: 11400000, guid: 27611aac78e283a49b877526fa73e360, type: 2}
+    weight: 2
+    unlockStageInRegion: 7
+  stageBosses:
+  - {fileID: 11400000, guid: 5944707a2ba638b409b6194872aa5c7b, type: 2}
+  - {fileID: 11400000, guid: 5944707a2ba638b409b6194872aa5c7b, type: 2}
+  - {fileID: 11400000, guid: 5944707a2ba638b409b6194872aa5c7b, type: 2}
+  - {fileID: 11400000, guid: 3e28d1b919d545b4b9a744c6596bc5bb, type: 2}
+  - {fileID: 11400000, guid: 3e28d1b919d545b4b9a744c6596bc5bb, type: 2}
+  - {fileID: 11400000, guid: 3e28d1b919d545b4b9a744c6596bc5bb, type: 2}
+  - {fileID: 11400000, guid: 3e28d1b919d545b4b9a744c6596bc5bb, type: 2}
+  - {fileID: 11400000, guid: 1bab17319bf070248a7ca17039c6dd90, type: 2}
+  - {fileID: 11400000, guid: 1bab17319bf070248a7ca17039c6dd90, type: 2}
+  - {fileID: 11400000, guid: 1bab17319bf070248a7ca17039c6dd90, type: 2}
+  boss: {fileID: 11400000, guid: 1bab17319bf070248a7ca17039c6dd90, type: 2}

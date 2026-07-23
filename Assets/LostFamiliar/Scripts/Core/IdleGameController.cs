@@ -16,10 +16,10 @@ namespace LostFamiliar.Core
         public event Action StateChanged;
 
         public double Attack => (5d + Data.attackLevel * 2d) * (1d + (Data.playerLevel - 1) * 0.05d);
-        public double MaxHealth => (50d + Data.healthLevel * 10d) * (1d + (Data.playerLevel - 1) * 0.03d);
-        public double AttacksPerSecond => Mathf.Min(5f, 1f + Data.attackSpeedLevel * 0.05f);
-        public double CriticalChance => Math.Min(0.75d, 0.05d + Data.criticalChanceLevel * 0.005d);
-        public double CriticalMultiplier => 1.5d + Data.criticalDamageLevel * 0.05d;
+        public double MaxHealth => 50d * (1d + (Data.playerLevel - 1) * 0.03d);
+        public double AttacksPerSecond => 1d;
+        public double CriticalChance => Math.Min(0.75d, 0.05d + Data.criticalChanceLevel * 0.002d);
+        public double CriticalMultiplier => 1.5d + Data.criticalDamageLevel * 0.02d;
 
         private float _attackTimer;
         private float _enemyAttackTimer;
@@ -108,7 +108,7 @@ namespace LostFamiliar.Core
             if (Data.gold < cost) return false;
             Data.gold -= cost;
             Data.IncreaseStatLevel(type);
-            PlayerHealth = Math.Min(MaxHealth, PlayerHealth + (type == StatType.MaxHealth ? 10d : 0d));
+            PlayerHealth = Math.Min(MaxHealth, PlayerHealth);
             SaveService.Save(Data);
             StateChanged?.Invoke();
             return true;
