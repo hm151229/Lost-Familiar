@@ -46,6 +46,7 @@ namespace LostFamiliar.Core
     public static class EquipmentBalance
     {
         public const float DefaultOwnedEffectRatio = .2f;
+        public const float EffectGrowthPerLevel = .1f;
 
         public static Color RarityColor(EquipmentRarity rarity) => rarity switch
         {
@@ -77,8 +78,13 @@ namespace LostFamiliar.Core
             if (equipment == null || level <= 0)
                 return 0f;
 
-            float levelMultiplier = 1f + Mathf.Max(0, level - 1) * .05f;
+            float levelMultiplier = 1f + Mathf.Max(0, level - 1) * EffectGrowthPerLevel;
             return baseValue * RarityEffectMultiplier(equipment.rarity) * levelMultiplier;
+        }
+
+        public static float OwnedEffectValue(EquipmentData equipment, float baseValue, int level)
+        {
+            return EffectValue(equipment, baseValue, level);
         }
 
         private static Color FromHex(byte r, byte g, byte b) => new Color32(r, g, b, 0xFF);

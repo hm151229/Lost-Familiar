@@ -328,6 +328,7 @@ namespace LostFamiliar.Battle
         private GameObject CreateTile(int index)
         {
             GameObject tile = new GameObject($"BackgroundTile_{index}");
+            tile.layer = gameObject.layer;
             tile.transform.SetParent(transform.parent, true);
             tile.transform.rotation = transform.rotation;
             tile.transform.localScale = transform.localScale;

@@ -11,9 +11,9 @@ namespace LostFamiliar.Battle
         [Min(0)] public int experienceIncreasePerStage = 10;
         [Min(1f)] public float baseEnemyHealthMultiplier = 1.5f;
         [Min(1f)] public float baseEnemyAttackMultiplier = 1.15f;
-        [Min(1f)] public float bossHealthMultiplier = 8f;
+        [Min(1f)] public float bossHealthMultiplier = 16f;
         [Min(1f)] public float bossAttackMultiplier = 2f;
-        [Min(1f)] public float regionBossHealthMultiplier = 14f;
+        [Min(1f)] public float regionBossHealthMultiplier = 28f;
         [Min(1f)] public float regionBossAttackMultiplier = 3f;
         [Min(1f)] public float bossTimeLimit = 45f;
         [Min(0)] public int bossGemReward = 2;

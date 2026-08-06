@@ -17,9 +17,9 @@ MonoBehaviour:
   experienceIncreasePerStage: 10
   baseEnemyHealthMultiplier: 1.5
   baseEnemyAttackMultiplier: 1.15
-  bossHealthMultiplier: 8
+  bossHealthMultiplier: 16
   bossAttackMultiplier: 2
-  regionBossHealthMultiplier: 14
+  regionBossHealthMultiplier: 28
   regionBossAttackMultiplier: 3
   bossTimeLimit: 45
   bossGemReward: 2

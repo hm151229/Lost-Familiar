@@ -12,11 +12,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ead90d58531fae24daa636763d7691b9, type: 3}
   m_Name: 04_SnowyMountain
   m_EditorClassIdentifier: 
-  id: magic_forest
-  displayName: "\uB9C8\uBC95 \uC232"
-  startStage: 1
-  endStage: 10
-  backgroundColor: {r: 0.08, g: 0.18, b: 0.12, a: 1}
+  id: snowy_mountain
+  displayName: "\uB208 \uB36E\uC778 \uC0B0\uB9E5"
+  startStage: 31
+  endStage: 40
+  backgroundColor: {r: 0.2, g: 0.28, b: 0.36, a: 1}
   spawnInterval: 0.65
   spawnBatchSize: 3
   maxAliveEnemies: 15

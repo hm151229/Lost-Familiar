@@ -138,7 +138,11 @@ namespace LostFamiliar.Editor
                 EnemyData enemy = CreateEnemy(
                     definition.fileName + suffix,
                     definition.normalNames[i],
-                    definition.baseHealth * healthMultipliers[i],
+                    // Only the first tutorial monster is tuned for a fresh-player one-shot:
+                    // base attack 10 vs. 6.5 * global 1.5 = 9.75 final HP.
+                    definition.startStage == 1 && i == 0
+                        ? 6.5f
+                        : definition.baseHealth * healthMultipliers[i],
                     definition.baseAttack * attackMultipliers[i],
                     1.35f + i * .15f,
                     10 + i * 2,

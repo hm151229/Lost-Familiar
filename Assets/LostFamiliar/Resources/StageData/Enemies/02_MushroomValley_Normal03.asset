@@ -17,9 +17,9 @@ MonoBehaviour:
   visualSprite: {fileID: 21300000, guid: 58ee75165d2a06948b6a6c55b5e7a2cc, type: 3}
   animatorController: {fileID: 0}
   visualColor: {r: 1, g: 1, b: 1, a: 1}
-  visualScale: {x: 0.4, y: 0.4, z: 0.4}
+  visualScale: {x: 0.3, y: 0.3, z: 0.3}
   visualOffset: {x: 0, y: 0, z: 0}
-  healthBarOffset: {x: 0, y: 1.2, z: 0}
+  healthBarOffset: {x: 0, y: 1, z: 0}
   baseHealth: 35.84
   baseAttack: 3.904
   moveSpeed: 1.6500001

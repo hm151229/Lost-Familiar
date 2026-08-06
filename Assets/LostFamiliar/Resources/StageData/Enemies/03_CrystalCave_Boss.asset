@@ -14,12 +14,12 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   displayName: "\uC218\uC815 \uACE8\uB818"
   prefab: {fileID: 3680693695815393067, guid: ef99aa778b377af4b9ed9da555473b44, type: 3}
-  visualSprite: {fileID: 21300000, guid: f66ee166cb68b634ea0b7ecb393a0cd1, type: 3}
+  visualSprite: {fileID: 21300000, guid: 9cf1fc2a7b7df914b9e5ab4b21a8d2b8, type: 3}
   animatorController: {fileID: 0}
   visualColor: {r: 1, g: 1, b: 1, a: 1}
   visualScale: {x: 0.8, y: 0.8, z: 0.8}
   visualOffset: {x: 0, y: 0, z: 0}
-  healthBarOffset: {x: 0, y: 1.2, z: 0}
+  healthBarOffset: {x: 0, y: 2.5, z: 0}
   baseHealth: 52.5
   baseAttack: 5.775
   moveSpeed: 1

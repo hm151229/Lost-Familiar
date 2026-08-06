@@ -32,5 +32,25 @@ MonoBehaviour:
   slowPercent: 0
   pullStrength: 4
   effectColor: {r: 0.3, g: 1, b: 0.58, a: 1}
+  projectileEffectPrefab: {fileID: 8070263597490960309, guid: 58a5cfeb5a0d7304a990211cb10e99bb, type: 3}
+  projectileTravelDuration: 1.1
+  projectileImpactDistance: 0.35
+  projectileSpawnOffset: {x: 0, y: 0, z: 0}
+  projectileRotationOffset: {x: 0, y: 0, z: 0}
+  hitEffectPrefab: {fileID: 1475618779179179817, guid: 07799b25da23d9c4d97a417f6f0d0f31, type: 3}
+  hitEffectOffset: {x: 0, y: 0, z: 0}
+  hitEffectLifetime: 1.5
+  explosionEffectPrefab: {fileID: 0}
+  explosionEffectOffset: {x: 0, y: 0, z: 0}
+  explosionEffectRotation: {x: 0, y: 0, z: 0}
+  explosionEffectScaleMultiplier: {x: 1, y: 1, z: 1}
+  explosionEffectLifetime: 1.5
+  playerAreaEffectPrefab: {fileID: 0}
+  playerAreaEffectOffset: {x: 0, y: 0, z: 0}
+  playerAreaEffectLifetime: 0
+  worldAreaEffectPrefab: {fileID: 0}
+  worldAreaEffectOffset: {x: 0, y: 0, z: 0}
+  worldAreaEffectRotation: {x: 0, y: 0, z: 0}
+  worldAreaEffectLifetime: 0
   ownedEffectType: 0
   ownedEffectBaseValue: 2.5

@@ -12,11 +12,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ead90d58531fae24daa636763d7691b9, type: 3}
   m_Name: 03_CrystalCave
   m_EditorClassIdentifier: 
-  id: magic_forest
-  displayName: "\uB9C8\uBC95 \uC232"
-  startStage: 1
-  endStage: 10
-  backgroundColor: {r: 0.08, g: 0.18, b: 0.12, a: 1}
+  id: crystal_cave
+  displayName: "\uC218\uC815 \uB3D9\uAD74"
+  startStage: 21
+  endStage: 30
+  backgroundColor: {r: 0.1, g: 0.16, b: 0.28, a: 1}
   spawnInterval: 0.65
   spawnBatchSize: 3
   maxAliveEnemies: 15

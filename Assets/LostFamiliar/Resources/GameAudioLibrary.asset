@@ -1,0 +1,87 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 548e7882e4ae27448a374bfe751787ed, type: 3}
+  m_Name: GameAudioLibrary
+  m_EditorClassIdentifier: 
+  entries:
+  - id: BGM_MainBattle
+    clip: {fileID: 8300000, guid: 2dc4667ab2c74f240800a1b987b7156d, type: 3}
+    volume: 0.5
+  - id: BGM_Result_Defeat
+    clip: {fileID: 8300000, guid: 9f14da70a9a406845aa7e44156d7c020, type: 3}
+    volume: 1
+  - id: BGM_Result_Victory
+    clip: {fileID: 8300000, guid: 0b0d14325ba64f040a6ef651ac4e659a, type: 3}
+    volume: 1
+  - id: BGM_Tower
+    clip: {fileID: 8300000, guid: 68da5f404be9555488d3b3a341aa8748, type: 3}
+    volume: 1
+  - id: SFX_ArcaneOrb_Hit
+    clip: {fileID: 8300000, guid: 347b0289de63d774f805386f54c35b8b, type: 3}
+    volume: 0.2
+  - id: SFX_ArcaneOrb_Loop
+    clip: {fileID: 8300000, guid: 6fd23613e9b5e4f4aa1eda52e80ed427, type: 3}
+    volume: 1
+  - id: SFX_BlackHole_Loop
+    clip: {fileID: 8300000, guid: bd3afa7f055b3864a84c892e6b99c868, type: 3}
+    volume: 1
+  - id: SFX_Blizzard_Loop
+    clip: {fileID: 8300000, guid: 97880f2e42258f04796c0a07586e2d8e, type: 3}
+    volume: 1
+  - id: SFX_FireBall_Explosion
+    clip: {fileID: 8300000, guid: 8b6cbd94cbda90c4fba7faa4daa7ed36, type: 3}
+    volume: 1
+  - id: SFX_IceSpear_Cast
+    clip: {fileID: 8300000, guid: 070c598d115825d4799d818f7a7dd54d, type: 3}
+    volume: 1
+  - id: SFX_IceSpear_Hit
+    clip: {fileID: 8300000, guid: 41a21c20592679846a7b9076315de239, type: 3}
+    volume: 0.2
+  - id: SFX_LightningBolt_Cast
+    clip: {fileID: 8300000, guid: 63c657ab98d2b7a49a5dcbd478016063, type: 3}
+    volume: 1
+  - id: SFX_Meteor_Impact
+    clip: {fileID: 8300000, guid: 1f00ea88d932232499cb9e3bb327cde9, type: 3}
+    volume: 1
+  - id: SFX_Mission_Complete
+    clip: {fileID: 8300000, guid: 9314d1425047ef94499caa49e294c0da, type: 3}
+    volume: 1
+  - id: SFX_Player_BasicAttack
+    clip: {fileID: 8300000, guid: 73deea1ff7049ff458e11a62f1f7f1bb, type: 3}
+    volume: 0.2
+  - id: SFX_Player_Death
+    clip: {fileID: 8300000, guid: 42c9b06e7f09c6a4a83a3b31719b6c90, type: 3}
+    volume: 1
+  - id: SFX_StarNova_Explosion
+    clip: {fileID: 8300000, guid: 535c24e4b72a9f34db2b0d007f96b7e6, type: 3}
+    volume: 1
+  - id: SFX_StarNova_Fragment_Fly
+    clip: {fileID: 8300000, guid: 4f93b6bdae9d5ff4cb5db44d46da1dc3, type: 3}
+    volume: 1
+  - id: SFX_Stat_Upgrade
+    clip: {fileID: 8300000, guid: 75c7780940083ec459737900431f3776, type: 3}
+    volume: 1
+  - id: SFX_Summon_Result_Open
+    clip: {fileID: 8300000, guid: 6c5cd755eab1ff64db01bde9535a9879, type: 3}
+    volume: 1
+  - id: SFX_UI_Click
+    clip: {fileID: 8300000, guid: 5821bb76e6f82674db6c5a1ff33ff18d, type: 3}
+    volume: 1
+  - id: SFX_UI_Locked
+    clip: {fileID: 8300000, guid: 79f55b8fafd01c64087473f46d4cc3b3, type: 3}
+    volume: 1
+  - id: SFX_WindCutter_Fly
+    clip: {fileID: 8300000, guid: fcbfba2c011ff4344af6e4c9069ed8d6, type: 3}
+    volume: 1
+  - id: sfx_battle_hunter_attack_shot
+    clip: {fileID: 8300000, guid: 9ded713b1bb01a741851c1ab11855193, type: 3}
+    volume: 1

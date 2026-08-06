@@ -16,18 +16,23 @@ namespace LostFamiliar.Battle
             if (regions == null || regions.Length == 0)
                 return null;
 
-            RegionData nearest = null;
+            RegionData previous = null;
+            RegionData next = null;
             foreach (RegionData region in regions)
             {
                 if (region == null)
                     continue;
                 if (region.Contains(stageNumber))
                     return region;
-                if (nearest == null || region.startStage < stageNumber)
-                    nearest = region;
+                if (region.startStage <= stageNumber &&
+                    (previous == null || region.startStage > previous.startStage))
+                    previous = region;
+                else if (region.startStage > stageNumber &&
+                         (next == null || region.startStage < next.startStage))
+                    next = region;
             }
 
-            return nearest;
+            return previous != null ? previous : next;
         }
 
         public SpecialStageData GetSpecialStage(int stageNumber)

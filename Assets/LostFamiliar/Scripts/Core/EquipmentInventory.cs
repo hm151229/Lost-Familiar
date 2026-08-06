@@ -304,7 +304,7 @@ namespace LostFamiliar.Core
                     {
                         foreach (EquipmentEffectDefinition effect in data.ownedEffects)
                             bonuses.Add(effect.type,
-                                EquipmentBalance.EffectValue(data, effect.baseValue, entry.level));
+                                EquipmentBalance.OwnedEffectValue(data, effect.baseValue, entry.level));
                     }
                     else if (data.effects != null)
                     {
@@ -314,7 +314,7 @@ namespace LostFamiliar.Core
                                 ? data.ownedEffectRatio
                                 : EquipmentBalance.DefaultOwnedEffectRatio;
                             bonuses.Add(effect.type,
-                                EquipmentBalance.EffectValue(data, effect.baseValue, entry.level) *
+                                EquipmentBalance.OwnedEffectValue(data, effect.baseValue, entry.level) *
                                 ownedRatio);
                         }
                     }

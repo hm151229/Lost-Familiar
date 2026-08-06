@@ -133,7 +133,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   m_Material: {fileID: 0}
-  m_Color: {r: 0.5445287, g: 1, b: 0.3160377, a: 1}
+  m_Color: {r: 0.9433962, g: 0.3715971, b: 0.28924885, a: 1}
   m_RaycastTarget: 1
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1
@@ -206,8 +206,16 @@ MonoBehaviour:
   minimumPlayerDistance: 1.4
   deathSlideDistance: 0.65
   deathDuration: 0.5
+  walkBounceHeight: 0.1
+  walkBounceSpeed: 3.5
+  walkSquashAmount: 0.06
+  walkMotionSmoothness: 18
+  separationRadius: 0.55
+  bossSeparationRadius: 1.2
+  separationSpeed: 4
   hitFlashColor: {r: 1, g: 0, b: 0, a: 0.58}
   hitFlashDuration: 0.3
+  hitFlashCooldown: 1
 --- !u!1 &5445674190798663873
 GameObject:
   m_ObjectHideFlags: 0
@@ -235,7 +243,7 @@ Transform:
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 0.4, y: 0.4, z: 0.4}
+  m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 7753069227324072722}
@@ -284,7 +292,7 @@ SpriteRenderer:
   m_SortingLayerID: 0
   m_SortingLayer: 0
   m_SortingOrder: 0
-  m_Sprite: {fileID: 21300000, guid: 9f36fd02872029d4996481cc9ec7b848, type: 3}
+  m_Sprite: {fileID: 21300000, guid: 598f5be5ab7256d4487730de4a42c39f, type: 3}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_FlipX: 0
   m_FlipY: 0
@@ -423,7 +431,7 @@ Transform:
   m_GameObject: {fileID: 8787009342136895438}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 1.2, z: 0}
+  m_LocalPosition: {x: 0, y: 2.7, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:

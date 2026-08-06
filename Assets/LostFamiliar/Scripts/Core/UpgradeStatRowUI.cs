@@ -74,6 +74,8 @@ namespace LostFamiliar.Battle
                 return;
             }
 
+            GameAudioManager.Instance.PlaySfx("SFX_Stat_Upgrade");
+
             if (_holdRoutine != null)
                 StopCoroutine(_holdRoutine);
             _holdRoutine = StartCoroutine(HoldUpgradeRoutine());
@@ -91,6 +93,8 @@ namespace LostFamiliar.Battle
                     StopHolding();
                     yield break;
                 }
+
+                GameAudioManager.Instance.PlaySfx("SFX_Stat_Upgrade");
 
                 yield return new WaitForSecondsRealtime(repeatInterval);
             }

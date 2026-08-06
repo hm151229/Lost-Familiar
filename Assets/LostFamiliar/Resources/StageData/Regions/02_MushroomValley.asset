@@ -12,11 +12,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ead90d58531fae24daa636763d7691b9, type: 3}
   m_Name: 02_MushroomValley
   m_EditorClassIdentifier: 
-  id: magic_forest
-  displayName: "\uB9C8\uBC95 \uC232"
-  startStage: 1
-  endStage: 10
-  backgroundColor: {r: 0.08, g: 0.18, b: 0.12, a: 1}
+  id: mushroom_valley
+  displayName: "\uBC84\uC12F \uACC4\uACE1"
+  startStage: 11
+  endStage: 20
+  backgroundColor: {r: 0.22, g: 0.12, b: 0.24, a: 1}
   spawnInterval: 0.65
   spawnBatchSize: 3
   maxAliveEnemies: 15

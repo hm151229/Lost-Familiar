@@ -12,7 +12,9 @@ namespace LostFamiliar.Core
         Gacha,
         ClearStage,
         ReachStatLevel,
-        ReachTotalUpgradeLevel
+        ReachTotalUpgradeLevel,
+        ClearGoldTower,
+        ClearGemTower
     }
 
     public readonly struct GuideMissionDefinition
@@ -22,19 +24,25 @@ namespace LostFamiliar.Core
         public readonly int target;
         public readonly int gemReward;
         public readonly StatType statType;
+        public readonly int goldTowerTicketReward;
+        public readonly int gemTowerTicketReward;
 
         public GuideMissionDefinition(
             int index,
             GuideMissionType type,
             int target,
             int gemReward,
-            StatType statType = StatType.Attack)
+            StatType statType = StatType.Attack,
+            int goldTowerTicketReward = 0,
+            int gemTowerTicketReward = 0)
         {
             this.index = index;
             this.type = type;
             this.target = Mathf.Max(1, target);
             this.gemReward = Mathf.Max(0, gemReward);
             this.statType = statType;
+            this.goldTowerTicketReward = Mathf.Max(0, goldTowerTicketReward);
+            this.gemTowerTicketReward = Mathf.Max(0, gemTowerTicketReward);
         }
 
         public string Title => type switch
@@ -44,8 +52,22 @@ namespace LostFamiliar.Core
             GuideMissionType.ClearStage => $"스테이지 {target:N0} 통과",
             GuideMissionType.ReachStatLevel => $"{GetStatName(statType)} 레벨 {target:N0} 달성",
             GuideMissionType.ReachTotalUpgradeLevel => $"총강화 레벨 {target:N0} 달성",
+            GuideMissionType.ClearGoldTower => $"골드의 탑 {target:N0}회 클리어",
+            GuideMissionType.ClearGemTower => $"보석의 탑 {target:N0}회 클리어",
             _ => "가이드 미션"
         };
+
+        public string RewardText
+        {
+            get
+            {
+                if (goldTowerTicketReward > 0)
+                    return goldTowerTicketReward.ToString("N0");
+                if (gemTowerTicketReward > 0)
+                    return gemTowerTicketReward.ToString("N0");
+                return gemReward.ToString("N0");
+            }
+        }
 
         private static string GetStatName(StatType type) => type switch
         {
@@ -61,6 +83,9 @@ namespace LostFamiliar.Core
 
     public static class GuideMissionCatalog
     {
+        public const int TowerMissionInterval = 20;
+        private const int TowerTicketRewardOffset = TowerMissionInterval - 2;
+        private const int TowerClearOffset = TowerMissionInterval - 1;
         public const int MissionGroupsPerTier = 5;
         public const int MissionsPerGroup = 4;
         public const int MissionsPerTier = MissionGroupsPerTier * MissionsPerGroup + 1;
@@ -88,6 +113,17 @@ namespace LostFamiliar.Core
         public static GuideMissionDefinition Get(int missionIndex)
         {
             missionIndex = Mathf.Max(0, missionIndex);
+            int towerMissionBlock = missionIndex / TowerMissionInterval;
+            bool goldTowerBlock = towerMissionBlock % 2 == 0;
+            if (missionIndex % TowerMissionInterval == TowerClearOffset)
+            {
+                return new GuideMissionDefinition(
+                    missionIndex,
+                    goldTowerBlock ? GuideMissionType.ClearGoldTower : GuideMissionType.ClearGemTower,
+                    1,
+                    300);
+            }
+
             int onboardingMissionCount = OnboardingTierCount * MissionsPerOnboardingTier;
             int rewardTier;
             int step;
@@ -131,7 +167,7 @@ namespace LostFamiliar.Core
             int stepInGroup = step % MissionsPerGroup;
             int globalGroup = SafeAdd(firstGlobalGroup, group);
 
-            return stepInGroup switch
+            GuideMissionDefinition mission = stepInGroup switch
             {
                 // 바로 다음 미션이 10회 뽑기이므로 정확히 1,000 제스트를 지급한다.
                 0 => new GuideMissionDefinition(
@@ -152,6 +188,16 @@ namespace LostFamiliar.Core
                     GetStageTarget(globalGroup),
                     ScaleReward(300, rewardTier, 50))
             };
+
+            if (missionIndex % TowerMissionInterval == TowerTicketRewardOffset && goldTowerBlock)
+                return new GuideMissionDefinition(
+                    mission.index, mission.type, mission.target, 0,
+                    mission.statType, goldTowerTicketReward: 1);
+            if (missionIndex % TowerMissionInterval == TowerTicketRewardOffset && !goldTowerBlock)
+                return new GuideMissionDefinition(
+                    mission.index, mission.type, mission.target, 0,
+                    mission.statType, gemTowerTicketReward: 1);
+            return mission;
         }
 
         private static int ScaleReward(int baseReward, int cycle, int perCycle) =>
@@ -190,10 +236,175 @@ namespace LostFamiliar.Core
         public int duplicates;
     }
 
+    public enum TowerType { Gold, Gem }
+    public enum TowerGrade { F, C, B, A, S }
+
+    [Serializable]
+    public sealed class TowerProgressData
+    {
+        public int tickets = 2;
+        public int highestUnlockedFloor = 1;
+        public string lastDailyTicketDate = string.Empty;
+        public List<int> bestGrades = new List<int>();
+        public List<float> bestClearTimes = new List<float>();
+
+        public void Normalize()
+        {
+            tickets = Math.Max(0, tickets);
+            highestUnlockedFloor = Math.Max(1, highestUnlockedFloor);
+            lastDailyTicketDate ??= string.Empty;
+            bestGrades ??= new List<int>();
+            bestClearTimes ??= new List<float>();
+            for (int i = 0; i < bestGrades.Count; i++)
+                bestGrades[i] = Mathf.Clamp(bestGrades[i], (int)TowerGrade.F, (int)TowerGrade.S);
+        }
+
+        public bool RefreshDailyTickets(string today)
+        {
+            Normalize();
+            if (lastDailyTicketDate == today)
+                return false;
+            tickets = Math.Max(tickets, TowerBalance.DailyTickets);
+            lastDailyTicketDate = today;
+            return true;
+        }
+
+        public TowerGrade GetBestGrade(int floor)
+        {
+            int index = Math.Max(1, floor) - 1;
+            return index < bestGrades.Count
+                ? (TowerGrade)Mathf.Clamp(bestGrades[index], 0, (int)TowerGrade.S)
+                : TowerGrade.F;
+        }
+
+        public void RecordClear(int floor, TowerGrade grade)
+        {
+            RecordClear(floor, grade, -1f);
+        }
+
+        public void RecordClear(int floor, TowerGrade grade, float clearTime)
+        {
+            floor = Math.Max(1, floor);
+            while (bestGrades.Count < floor)
+                bestGrades.Add((int)TowerGrade.F);
+            bestGrades[floor - 1] = Math.Max(bestGrades[floor - 1], (int)grade);
+            while (bestClearTimes.Count < floor) bestClearTimes.Add(-1f);
+            if (clearTime >= 0f && (bestClearTimes[floor - 1] < 0f || clearTime < bestClearTimes[floor - 1]))
+                bestClearTimes[floor - 1] = clearTime;
+            highestUnlockedFloor = Math.Max(highestUnlockedFloor, floor + 1);
+        }
+
+        public float GetBestClearTime(int floor)
+        {
+            int index = Math.Max(1, floor) - 1;
+            return index < bestClearTimes.Count ? bestClearTimes[index] : -1f;
+        }
+    }
+
+    public readonly struct TowerRunSetup
+    {
+        public readonly TowerType type;
+        public readonly int floor;
+        public readonly float timeLimit;
+        public readonly int normalEnemyCount;
+        public readonly int bossCount;
+        public readonly double normalEnemyHealth;
+        public readonly double bossHealth;
+        public readonly double enemyAttack;
+
+        public TowerRunSetup(TowerType type, int floor)
+        {
+            this.type = type;
+            this.floor = Math.Max(1, floor);
+            timeLimit = TowerBalance.TimeLimit;
+            normalEnemyCount = TowerBalance.NormalEnemyCount(this.floor);
+            bossCount = TowerBalance.BossCount(this.floor);
+            normalEnemyHealth = TowerBalance.EnemyHealth(this.floor);
+            bossHealth = TowerBalance.BossHealth(this.floor);
+            enemyAttack = TowerBalance.EnemyAttack(this.floor);
+        }
+    }
+
+    public readonly struct TowerRunResult
+    {
+        public readonly TowerType type;
+        public readonly int floor;
+        public readonly TowerGrade grade;
+        public readonly float remainingTime;
+        public readonly double goldReward;
+        public readonly int gemReward;
+        public readonly bool nextFloorUnlocked;
+        public readonly bool sweepUnlocked;
+
+        public TowerRunResult(
+            TowerType type, int floor, TowerGrade grade, float remainingTime,
+            double goldReward, int gemReward, bool nextFloorUnlocked, bool sweepUnlocked)
+        {
+            this.type = type;
+            this.floor = floor;
+            this.grade = grade;
+            this.remainingTime = remainingTime;
+            this.goldReward = goldReward;
+            this.gemReward = gemReward;
+            this.nextFloorUnlocked = nextFloorUnlocked;
+            this.sweepUnlocked = sweepUnlocked;
+        }
+    }
+
+    public static class TowerBalance
+    {
+        public const int DailyTickets = 2;
+        public const float TimeLimit = 30f;
+
+        public static TowerGrade Grade(float remainingTime, bool cleared)
+        {
+            if (!cleared) return TowerGrade.F;
+            if (remainingTime >= 20f) return TowerGrade.S;
+            if (remainingTime >= 12f) return TowerGrade.A;
+            if (remainingTime >= 5f) return TowerGrade.B;
+            return TowerGrade.C;
+        }
+
+        public static int NormalEnemyCount(int floor) =>
+            Mathf.Clamp(5 + Math.Max(0, floor - 1) * 3, 5, 60);
+
+        public static int BossCount(int floor) =>
+            Mathf.Clamp(1 + Math.Max(0, floor - 1) / 5, 1, 10);
+
+        public static double EnemyHealth(int floor) =>
+            Math.Ceiling(20d * Math.Pow(1.5d, Math.Max(0, floor - 1)));
+
+        public static double BossHealth(int floor) =>
+            Math.Ceiling(
+                EnemyHealth(floor) *
+                30d *
+                Math.Pow(1.15d, Math.Max(0, floor - 1)));
+
+        public static double EnemyAttack(int floor) =>
+            Math.Ceiling(2d * Math.Pow(1.25d, Math.Max(0, floor - 1)));
+
+        public static double BaseGoldReward(int floor) =>
+            Math.Ceiling(5000d * Math.Pow(1.35d, Math.Max(0, floor - 1)));
+
+        public static int BaseGemReward(int floor) =>
+            (int)Math.Min(int.MaxValue, 500L + Math.Max(0, floor - 1) * 100L);
+
+        public static double GoldReward(int floor, TowerGrade grade, bool grantFirstSBonus = false) =>
+            grade == TowerGrade.F ? 0d : BaseGoldReward(floor) *
+                (grantFirstSBonus && grade == TowerGrade.S ? 1.5d : 1d);
+
+        public static int GemReward(int floor, TowerGrade grade, bool grantFirstSBonus = false) =>
+            grade == TowerGrade.F ? 0 : Mathf.CeilToInt(BaseGemReward(floor) *
+                (grantFirstSBonus && grade == TowerGrade.S ? 1.5f : 1f));
+    }
+
     [Serializable]
     public sealed class GameSaveData
     {
-        public int version = 8;
+        public int version = 12;
+        public long lastSavedUtcTicks;
+        public double pendingOfflineGold;
+        public double pendingOfflineSeconds;
         public double gold;
         public int gems;
         public int playerLevel = 1;
@@ -229,6 +440,11 @@ namespace LostFamiliar.Core
         public int weaponGachaProgress;
         public List<SkillSaveEntry> skillInventory = new List<SkillSaveEntry>();
         public List<string> equippedSkillIds = new List<string>();
+        public TowerProgressData goldTower = new TowerProgressData();
+        public TowerProgressData gemTower = new TowerProgressData();
+
+        public TowerProgressData GetTower(TowerType type) =>
+            type == TowerType.Gold ? goldTower : gemTower;
 
         public int GetGachaLevel(GachaCategory category) => category switch
         {
@@ -423,6 +639,10 @@ namespace LostFamiliar.Core
                     equippedSkillIds.Count - Battle.SkillBalance.MaxEquippedSkillCount);
             for (int i = 0; i < equippedSkillIds.Count; i++)
                 equippedSkillIds[i] ??= string.Empty;
+            goldTower ??= new TowerProgressData();
+            gemTower ??= new TowerProgressData();
+            goldTower.Normalize();
+            gemTower.Normalize();
             if (guideMissionLayoutVersion < 2)
             {
                 guideMissionIndex = 0;
@@ -431,7 +651,10 @@ namespace LostFamiliar.Core
             }
             guideMissionIndex = Math.Max(0, guideMissionIndex);
             guideMissionProgress = Math.Max(0, guideMissionProgress);
-            version = 8;
+            lastSavedUtcTicks = Math.Max(0L, lastSavedUtcTicks);
+            pendingOfflineGold = Math.Max(0d, pendingOfflineGold);
+            pendingOfflineSeconds = Math.Max(0d, Math.Min(12d * 60d * 60d, pendingOfflineSeconds));
+            version = 12;
         }
     }
 

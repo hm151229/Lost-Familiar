@@ -19,7 +19,7 @@ MonoBehaviour:
   visualColor: {r: 1, g: 1, b: 1, a: 1}
   visualScale: {x: 0.8, y: 0.8, z: 0.8}
   visualOffset: {x: 0, y: 0, z: 0}
-  healthBarOffset: {x: 0, y: 1.2, z: 0}
+  healthBarOffset: {x: 0.15, y: 2, z: 0}
   baseHealth: 34.5
   baseAttack: 3.8500001
   moveSpeed: 1

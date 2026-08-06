@@ -23,6 +23,7 @@ namespace LostFamiliar.Battle
         [SerializeField] private TMP_Text stageExperiencePercentText;
         [SerializeField] private TMP_Text stageExperienceValueText;
         [SerializeField] private TMP_Text bossTimerText;
+        [SerializeField] private GameObject bossTimerIcon;
         [SerializeField] private Color bossHealthFillColor = new Color(.95f, .16f, .2f, 1f);
 
         [Header("플레이어 재화")]
@@ -68,7 +69,10 @@ namespace LostFamiliar.Battle
             if (stageExperiencePercentText == null)
                 stageExperiencePercentText = Find<TMP_Text>(SafeAreaPath + "/StageUI/ProgressBar/PercentText");
             if (bossTimerText == null)
-                bossTimerText = Find<TMP_Text>(SafeAreaPath + "/StageUI/BossTimerText");
+                bossTimerText = Find<TMP_Text>(SafeAreaPath + "/StageUI/BossTimer/BossTimerText");
+            if (bossTimerIcon == null)
+                bossTimerIcon = FindChildObject(bossTimerText != null ? bossTimerText.transform.parent : null, "TimerIcon")
+                    ?? FindObject(SafeAreaPath + "/StageUI/BossTimer/TimerIcon");
 
             if (goldText == null)
                 goldText = Find<TMP_Text>(SafeAreaPath + "/TopUI/CurrencyGroup/GoldPanel/AmountText");
@@ -144,11 +148,12 @@ namespace LostFamiliar.Battle
 
         private void RefreshBossTimer()
         {
-            if (_battle == null || bossTimerText == null)
+            if (_battle == null)
                 return;
 
             bool visible = _battle.Phase == BattlePhase.EnteringBoss || _battle.Phase == BattlePhase.Boss;
-            bossTimerText.gameObject.SetActive(visible);
+            if (bossTimerText != null) bossTimerText.gameObject.SetActive(visible);
+            if (bossTimerIcon != null) bossTimerIcon.SetActive(visible);
             if (!visible)
                 return;
 
@@ -163,6 +168,16 @@ namespace LostFamiliar.Battle
         {
             GameObject target = GameObject.Find(path);
             return target != null ? target.GetComponent<T>() : null;
+        }
+
+        private static GameObject FindObject(string path) => GameObject.Find(path);
+
+        private static GameObject FindChildObject(Transform root, string objectName)
+        {
+            if (root == null) return null;
+            foreach (Transform child in root.GetComponentsInChildren<Transform>(true))
+                if (child.name == objectName) return child.gameObject;
+            return null;
         }
 
         private static void ConfigureFillImage(Image image)
@@ -215,6 +230,7 @@ namespace LostFamiliar.Battle
         [SerializeField] private TMP_Text titleText;
         [SerializeField] private TMP_Text missionText;
         [SerializeField] private TMP_Text rewardAmountText;
+        [SerializeField] private Image rewardIconImage;
         [SerializeField] private GameObject clearIconImage;
 
         private MainBattleLoop _battle;
@@ -228,6 +244,7 @@ namespace LostFamiliar.Battle
         private Coroutine _arrowRoutine;
         private Coroutine _noticeRoutine;
         private Coroutine _completionEffectRoutine;
+        private Sprite _defaultGemRewardIcon;
         private Vector3 _normalPanelScale = Vector3.one;
         private Color _normalTitleColor = Color.white;
         private bool _visualDefaultsCached;
@@ -281,7 +298,8 @@ namespace LostFamiliar.Battle
             if (missionText != null)
                 missionText.text = $"{mission.Title}  {progress:N0}/{mission.target:N0}";
             if (rewardAmountText != null)
-                rewardAmountText.text = mission.gemReward.ToString();
+                rewardAmountText.text = mission.RewardText;
+            RefreshRewardIcon(mission);
             if (clearIconImage != null)
                 clearIconImage.SetActive(complete);
             SetCompletionEffect(complete);
@@ -320,7 +338,33 @@ namespace LostFamiliar.Battle
                 case LostFamiliar.Core.GuideMissionType.ReachTotalUpgradeLevel:
                     ShowNavigationArrow(_upgradeButton);
                     break;
+                case LostFamiliar.Core.GuideMissionType.ClearGoldTower:
+                    ShowNotice("모험에서 골드의 탑을 1회 클리어해주세요");
+                    break;
+                case LostFamiliar.Core.GuideMissionType.ClearGemTower:
+                    ShowNotice("모험에서 보석의 탑을 1회 클리어해주세요");
+                    break;
             }
+        }
+
+        private void RefreshRewardIcon(LostFamiliar.Core.GuideMissionDefinition mission)
+        {
+            if (rewardIconImage == null)
+                return;
+
+            Sprite icon = _defaultGemRewardIcon;
+            if (mission.goldTowerTicketReward > 0 || mission.gemTowerTicketReward > 0)
+            {
+                AdventureTowerPopupController towerPopup =
+                    FindFirstObjectByType<AdventureTowerPopupController>(FindObjectsInactive.Include);
+                if (towerPopup != null)
+                    icon = mission.goldTowerTicketReward > 0
+                        ? towerPopup.GoldTicketIcon
+                        : towerPopup.GemTicketIcon;
+            }
+
+            if (icon != null)
+                rewardIconImage.sprite = icon;
         }
 
         private void ShowGachaArrow()
@@ -603,6 +647,9 @@ namespace LostFamiliar.Battle
 
             Transform reward = FindChildTransform("Reward");
             rewardAmountText ??= FindChild<TMP_Text>(reward, "AmountText");
+            rewardIconImage ??= FindChild<Image>(reward, "IconImage");
+            if (_defaultGemRewardIcon == null && rewardIconImage != null)
+                _defaultGemRewardIcon = rewardIconImage.sprite;
             clearIconImage ??= FindChildTransform("ClearIconImage")?.gameObject;
         }
 

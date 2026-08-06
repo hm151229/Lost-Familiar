@@ -17,9 +17,9 @@ MonoBehaviour:
   icon: {fileID: 21300000, guid: 6ce8485537fd8e6499b118ab475a217a, type: 3}
   maxLevel: 100
   displayName: "\uBE14\uB799\uD640"
-  description: "4\uCD08\uAC04 \uC801\uC744 \uB04C\uC5B4\uB2F9\uAE30\uBA70 0.2\uCD08\uB9C8\uB2E4
-    \uACF5\uACA9\uB825\uC758 70% \uD53C\uD574\uB97C \uC8FC\uACE0 \uC885\uB8CC \uC2DC
-    600% \uD53C\uD574\uB97C \uC900\uB2E4."
+  description: "4\uCD08\uAC04 \uC801\uC744 \uB04C\uC5B4\uB2F9\uAE30\uBA70 \uACF5\uACA9\uB825\uC758
+    70% \uD53C\uD574\uB97C 0.2\uCD08\uB9C8\uB2E4 \uB098\uB204\uC5B4 \uC8FC\uACE0 \uC885\uB8CC
+    \uC2DC 600% \uD53C\uD574\uB97C \uC900\uB2E4."
   behavior: 8
   targetType: 1
   cooldown: 22
@@ -30,7 +30,25 @@ MonoBehaviour:
   tickInterval: 0.2
   secondaryDamageMultiplier: 6
   slowPercent: 0
-  pullStrength: 4
+  pullStrength: 1.5
+  blackHoleDamageRadius: 0.8
   effectColor: {r: 0.16, g: 0.03, b: 0.28, a: 1}
+  projectileEffectPrefab: {fileID: 0}
+  projectileSpawnOffset: {x: 0, y: 0, z: 0}
+  projectileRotationOffset: {x: 0, y: 0, z: 0}
+  hitEffectPrefab: {fileID: 0}
+  hitEffectOffset: {x: 0, y: 0, z: 0}
+  hitEffectLifetime: 1.5
+  explosionEffectPrefab: {fileID: 0}
+  explosionEffectOffset: {x: 0, y: 0, z: 0}
+  explosionEffectRotation: {x: 0, y: 0, z: 0}
+  explosionEffectLifetime: 1.5
+  playerAreaEffectPrefab: {fileID: 0}
+  playerAreaEffectOffset: {x: 0, y: 0, z: 0}
+  playerAreaEffectLifetime: 0
+  worldAreaEffectPrefab: {fileID: 871324411638548333, guid: 5fae79d5c764c3b44b9a080a80a0b852, type: 3}
+  worldAreaEffectOffset: {x: 0, y: 0, z: 0}
+  worldAreaEffectRotation: {x: 0, y: 0, z: 0}
+  worldAreaEffectLifetime: 0
   ownedEffectType: 4
   ownedEffectBaseValue: 10

@@ -14,6 +14,13 @@ namespace LostFamiliar.Battle
 
         private static readonly Color TypeUnselected = new Color32(0xEA, 0xD5, 0xB4, 0xFF);
 
+        [Header("Character Stand Motion")]
+        [SerializeField] private RectTransform characterStand;
+        [SerializeField, Min(.1f)] private float characterBreathSpeed = 1.8f;
+        [SerializeField, Range(0f, .1f)] private float characterBreathScaleAmount = .012f;
+        [SerializeField, Range(0f, 15f)] private float characterBreathMoveAmount = .6f;
+        [SerializeField, Range(0f, 2f)] private float characterSwayAngle = .35f;
+
         private MainBattleLoop _battle;
         private Transform _equippedRoot;
         private Transform _inventoryContent;
@@ -28,6 +35,10 @@ namespace LostFamiliar.Battle
         private Filter _filter = Filter.Weapon;
         private bool _listenersBound;
         private bool _refreshPending;
+        private Vector2 _characterStandBasePosition;
+        private Vector3 _characterStandBaseScale;
+        private Quaternion _characterStandBaseRotation;
+        private bool _characterStandBaseCached;
 
         private void Awake()
         {
@@ -37,7 +48,13 @@ namespace LostFamiliar.Battle
 
         private void OnEnable()
         {
+            CacheCharacterStandBase();
             RefreshNow();
+        }
+
+        private void OnDisable()
+        {
+            ResetCharacterStandMotion();
         }
 
         public void RefreshNow()
@@ -64,6 +81,9 @@ namespace LostFamiliar.Battle
 
         private void FindReferences()
         {
+            if (characterStand == null)
+                characterStand = FindDescendant("CharacterStand") as RectTransform;
+            CacheCharacterStandBase();
             _equippedRoot ??= FindDescendant("EquipSlotGroup");
             _statPanel ??= FindDescendant("StatPanel");
             Transform inventory = FindDescendant("Inventory");
@@ -174,6 +194,7 @@ namespace LostFamiliar.Battle
         {
             EquipmentInventory inventory = _battle?.EquipmentInventory;
             inventory?.TryUpgradeAll(GetSelectedEquipmentType());
+            GameAudioManager.Instance.PlaySfx("SFX_Stat_Upgrade");
             SetActive(_mergeAllRedDot, false);
             RefreshTabRedDot(_filter, inventory);
             Canvas.ForceUpdateCanvases();
@@ -204,6 +225,8 @@ namespace LostFamiliar.Battle
 
         private void LateUpdate()
         {
+            UpdateCharacterStandMotion();
+
             if (_battle == null)
                 BindBattle(FindFirstObjectByType<MainBattleLoop>());
 
@@ -218,6 +241,54 @@ namespace LostFamiliar.Battle
             // 데이터가 준비되는 즉시 버튼/탭 레드닷이 표시되도록 계속 동기화한다.
             RefreshActionRedDots();
             RefreshCurrencies();
+        }
+
+        private void CacheCharacterStandBase()
+        {
+            if (characterStand == null || _characterStandBaseCached)
+                return;
+
+            _characterStandBasePosition = characterStand.anchoredPosition;
+            _characterStandBaseScale = characterStand.localScale;
+            _characterStandBaseRotation = characterStand.localRotation;
+            _characterStandBaseCached = true;
+        }
+
+        private void UpdateCharacterStandMotion()
+        {
+            if (characterStand == null || !_characterStandBaseCached)
+                return;
+
+            float phase = Time.unscaledTime * characterBreathSpeed;
+            float inhale = (Mathf.Sin(phase) + 1f) * .5f;
+            inhale = Mathf.SmoothStep(0f, 1f, inhale);
+            float breath = inhale * 2f - 1f;
+            float scaleY = 1f + breath * characterBreathScaleAmount;
+            float scaleX = 1f - breath * characterBreathScaleAmount * .18f;
+
+            characterStand.localScale = Vector3.Scale(
+                _characterStandBaseScale,
+                new Vector3(scaleX, scaleY, 1f));
+
+            // Compensate for center-pivot scaling so the character's feet remain planted.
+            float footCompensation = characterStand.rect.height * characterStand.pivot.y *
+                                     _characterStandBaseScale.y * (scaleY - 1f);
+            float subtleBob = Mathf.Sin(phase * .5f + .7f) * characterBreathMoveAmount;
+            characterStand.anchoredPosition = _characterStandBasePosition +
+                                               Vector2.up * (footCompensation + subtleBob);
+            float sway = Mathf.Sin(phase * .43f + 1.1f) * characterSwayAngle;
+            characterStand.localRotation = _characterStandBaseRotation *
+                                           Quaternion.Euler(0f, 0f, sway);
+        }
+
+        private void ResetCharacterStandMotion()
+        {
+            if (characterStand == null || !_characterStandBaseCached)
+                return;
+
+            characterStand.anchoredPosition = _characterStandBasePosition;
+            characterStand.localScale = _characterStandBaseScale;
+            characterStand.localRotation = _characterStandBaseRotation;
         }
 
         private void Close() => gameObject.SetActive(false);
@@ -250,8 +321,12 @@ namespace LostFamiliar.Battle
         {
             Transform target = FindDescendant(_equippedRoot, objectName);
             EquipmentSlotItemUI ui = target != null ? target.GetComponent<EquipmentSlotItemUI>() : null;
-            if (ui == null)
+            if (target == null)
                 return;
+            if (target.GetComponent<InventorySlotView>() == null)
+                target.gameObject.AddComponent<InventorySlotView>();
+            if (ui == null)
+                ui = target.gameObject.AddComponent<EquipmentSlotItemUI>();
 
             string id = _battle.EquipmentInventory.GetEquippedId(equipmentSlot);
             EquipmentData data = _battle.EquipmentInventory.Database?.Get(id);
@@ -333,7 +408,16 @@ namespace LostFamiliar.Battle
         {
             if (_inventorySlots.Count > 0)
                 return;
-            _inventorySlots.AddRange(_inventoryContent.GetComponentsInChildren<EquipmentSlotItemUI>(true));
+            foreach (Transform child in _inventoryContent)
+            {
+                InventorySlotView view = child.GetComponent<InventorySlotView>();
+                if (view == null)
+                    view = child.gameObject.AddComponent<InventorySlotView>();
+                EquipmentSlotItemUI item = child.GetComponent<EquipmentSlotItemUI>();
+                if (item == null)
+                    item = child.gameObject.AddComponent<EquipmentSlotItemUI>();
+                _inventorySlots.Add(item);
+            }
         }
 
         private void EnsureInventorySlotCount(int count)
@@ -344,7 +428,7 @@ namespace LostFamiliar.Battle
             while (_inventorySlots.Count < count)
             {
                 EquipmentSlotItemUI clone = Instantiate(template, _inventoryContent);
-                clone.name = $"EquipSlot ({_inventorySlots.Count})";
+                clone.name = $"InventorySlot ({_inventorySlots.Count})";
                 _inventorySlots.Add(clone);
             }
         }
