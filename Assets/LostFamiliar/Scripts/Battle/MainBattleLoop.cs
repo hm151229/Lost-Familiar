@@ -36,6 +36,7 @@ namespace LostFamiliar.Battle
         public UpgradeSystem UpgradeSystem { get; private set; }
         public OfflineRewardSystem OfflineRewardSystem { get; private set; }
         public GuideMissionSystem GuideMissionSystem { get; private set; }
+        public TowerSystem TowerSystem { get; private set; }
         public PlayerAutoCombat Player => player;
         public BattlePhase Phase { get; private set; }
         public int StageNumber { get; private set; } = 1;
@@ -82,9 +83,6 @@ namespace LostFamiliar.Battle
         private float _saveTimer;
         private bool _transitioning;
         private bool _initialized;
-        private bool _towerRunActive;
-        private TowerType _activeTowerType;
-        private int _activeTowerFloor;
 
         public void Initialize(StageDatabase database, PlayerAutoCombat playerActor)
         {
@@ -101,6 +99,7 @@ namespace LostFamiliar.Battle
             UpgradeSystem = new UpgradeSystem(_saveData);
             OfflineRewardSystem = new OfflineRewardSystem(_saveData);
             GuideMissionSystem = new GuideMissionSystem(_saveData);
+            TowerSystem = new TowerSystem(_saveData);
             double offlineSeconds = OfflineRewardSystem?.CaptureElapsedSeconds() ?? 0d;
             RefreshDailyTowerTickets();
             equipmentDatabase ??= Resources.Load<EquipmentDatabase>("Equipment/DefaultEquipmentDatabase");
@@ -657,6 +656,7 @@ namespace LostFamiliar.Battle
             UpgradeSystem = new UpgradeSystem(_saveData);
             OfflineRewardSystem = new OfflineRewardSystem(_saveData);
             GuideMissionSystem = new GuideMissionSystem(_saveData);
+            TowerSystem = new TowerSystem(_saveData);
             InitializeEquipmentInventory();
             SkillInventory = new SkillInventory(_saveData);
             GachaSystem = new GachaSystem(_saveData, equipmentDatabase, SkillInventory);
@@ -762,20 +762,21 @@ namespace LostFamiliar.Battle
 
         public TowerProgressData GetTowerProgress(TowerType type)
         {
-            if (_saveData == null)
+            if (TowerSystem == null)
                 return null;
-            RefreshDailyTowerTickets();
-            return _saveData.GetTower(type);
+
+            if (TowerSystem.RefreshDailyTickets())
+                Save();
+
+            return TowerSystem.GetProgress(type);
         }
 
         public bool RefreshDailyTowerTickets()
         {
-            if (_saveData == null)
+            if (TowerSystem == null)
                 return false;
 
-            string today = DateTime.Now.ToString("yyyyMMdd");
-            bool changed = _saveData.goldTower.RefreshDailyTickets(today);
-            changed |= _saveData.gemTower.RefreshDailyTickets(today);
+            bool changed = TowerSystem.RefreshDailyTickets();
             if (changed)
                 Save();
             return changed;
@@ -784,20 +785,10 @@ namespace LostFamiliar.Battle
         public bool TryBeginTowerRun(TowerType type, int floor, out TowerRunSetup setup)
         {
             setup = default;
-            if (_saveData == null || _towerRunActive)
+            if (TowerSystem == null ||
+                !TowerSystem.TryBeginRun(type, floor, out setup))
                 return false;
 
-            RefreshDailyTowerTickets();
-            TowerProgressData progress = _saveData.GetTower(type);
-            floor = Mathf.Max(1, floor);
-            if (progress == null || progress.tickets <= 0 || floor > progress.highestUnlockedFloor)
-                return false;
-
-            progress.tickets--;
-            _towerRunActive = true;
-            _activeTowerType = type;
-            _activeTowerFloor = floor;
-            setup = new TowerRunSetup(type, floor);
             Save();
             NotifyStateChanged();
             return true;
@@ -806,9 +797,9 @@ namespace LostFamiliar.Battle
         public bool TryGetActiveTowerRun(out TowerRunSetup setup)
         {
             setup = default;
-            if (!_towerRunActive) return false;
-            setup = new TowerRunSetup(_activeTowerType, _activeTowerFloor);
-            return true;
+
+            return TowerSystem != null &&
+                   TowerSystem.TryGetActiveRun(out setup);
         }
 
         public void ConfigureTowerPlayer(PlayerAutoCombat towerPlayer)
@@ -821,86 +812,50 @@ namespace LostFamiliar.Battle
 
         public TowerRunResult CompleteTowerRun(bool cleared, float remainingTime)
         {
-            if (_saveData == null || !_towerRunActive)
+            if (TowerSystem == null ||
+                !TowerSystem.TryCompleteRun(
+                    cleared,
+                    remainingTime,
+                    out TowerRunResult result))
                 return default;
 
-            TowerType type = _activeTowerType;
-            int floor = _activeTowerFloor;
-            _towerRunActive = false;
-            _activeTowerFloor = 0;
-            remainingTime = Mathf.Clamp(remainingTime, 0f, TowerBalance.TimeLimit);
-            TowerGrade grade = TowerBalance.Grade(remainingTime, cleared);
-            TowerProgressData progress = _saveData.GetTower(type);
-            TowerGrade previousBestGrade = progress.GetBestGrade(floor);
-            bool firstSGradeClear = grade == TowerGrade.S && previousBestGrade < TowerGrade.S;
-            int previousHighest = progress.highestUnlockedFloor;
-            if (grade == TowerGrade.F)
-                progress.tickets++;
-            else
+            if (result.grade != TowerGrade.F)
             {
-                progress.RecordClear(floor, grade, TowerBalance.TimeLimit - remainingTime);
-                AddGuideMissionActionProgress(
-                    type == TowerType.Gold
+                GuideMissionSystem?.AddActionProgress(
+                    result.type == TowerType.Gold
                         ? GuideMissionType.ClearGoldTower
                         : GuideMissionType.ClearGemTower,
                     1);
             }
 
-            double goldReward = type == TowerType.Gold
-                ? TowerBalance.GoldReward(floor, grade, firstSGradeClear)
-                : 0d;
-            int gemReward = type == TowerType.Gem
-                ? TowerBalance.GemReward(floor, grade, firstSGradeClear)
-                : 0;
-            _saveData.gold += goldReward;
-            _saveData.gems += gemReward;
-            if (goldReward > 0d) PublishReward(RewardType.Gold, goldReward, "골드의 탑");
-            if (gemReward > 0) PublishReward(RewardType.Gem, gemReward, "보석의 탑");
+            if (result.goldReward > 0d)
+                PublishReward(RewardType.Gold, result.goldReward, "골드의 탑");
+            if (result.gemReward > 0)
+                PublishReward(RewardType.Gem, result.gemReward, "보석의 탑");
+
             Save();
             NotifyStateChanged();
-            return new TowerRunResult(
-                type,
-                floor,
-                grade,
-                remainingTime,
-                goldReward,
-                gemReward,
-                progress.highestUnlockedFloor > previousHighest,
-                progress.GetBestGrade(floor) >= TowerGrade.A);
+            return result;
         }
 
         public bool TrySweepTower(TowerType type, int floor, out TowerRunResult result)
         {
             result = default;
-            if (_saveData == null || _towerRunActive)
+            if (TowerSystem == null ||
+                !TowerSystem.TrySweep(type, floor, out result))
                 return false;
 
-            RefreshDailyTowerTickets();
-            TowerProgressData progress = _saveData.GetTower(type);
-            floor = Mathf.Max(1, floor);
-            TowerGrade bestGrade = progress?.GetBestGrade(floor) ?? TowerGrade.F;
-            if (progress == null || progress.tickets <= 0 || floor > progress.highestUnlockedFloor ||
-                bestGrade < TowerGrade.A)
-                return false;
-
-            progress.tickets--;
-            AddGuideMissionActionProgress(
+            GuideMissionSystem?.AddActionProgress(
                 type == TowerType.Gold
                     ? GuideMissionType.ClearGoldTower
                     : GuideMissionType.ClearGemTower,
                 1);
-            double goldReward = type == TowerType.Gold
-                ? TowerBalance.GoldReward(floor, bestGrade, false)
-                : 0d;
-            int gemReward = type == TowerType.Gem
-                ? TowerBalance.GemReward(floor, bestGrade, false)
-                : 0;
-            _saveData.gold += goldReward;
-            _saveData.gems += gemReward;
-            if (goldReward > 0d) PublishReward(RewardType.Gold, goldReward, "골드의 탑 자동 토벌");
-            if (gemReward > 0) PublishReward(RewardType.Gem, gemReward, "보석의 탑 자동 토벌");
-            result = new TowerRunResult(
-                type, floor, bestGrade, TowerBalance.TimeLimit, goldReward, gemReward, false, true);
+
+            if (result.goldReward > 0d)
+                PublishReward(RewardType.Gold, result.goldReward, "골드의 탑 자동 토벌");
+            if (result.gemReward > 0)
+                PublishReward(RewardType.Gem, result.gemReward, "보석의 탑 자동 토벌");
+
             Save();
             NotifyStateChanged();
             return true;
@@ -908,21 +863,18 @@ namespace LostFamiliar.Battle
 
         public void CancelTowerRun()
         {
-            if (_saveData == null || !_towerRunActive)
+            if (TowerSystem == null || !TowerSystem.CancelRun())
                 return;
-            _saveData.GetTower(_activeTowerType).tickets++;
-            _towerRunActive = false;
-            _activeTowerFloor = 0;
+
             Save();
             NotifyStateChanged();
         }
 
         public void GrantTowerTickets(TowerType type, int amount)
         {
-            if (_saveData == null || amount <= 0)
+            if (TowerSystem == null || !TowerSystem.GrantTickets(type, amount))
                 return;
-            TowerProgressData progress = _saveData.GetTower(type);
-            progress.tickets = (int)Math.Min(int.MaxValue, (long)progress.tickets + amount);
+
             Save();
             NotifyStateChanged();
         }
