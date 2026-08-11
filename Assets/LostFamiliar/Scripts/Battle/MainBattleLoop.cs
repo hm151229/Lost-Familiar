@@ -43,8 +43,6 @@ namespace LostFamiliar.Battle
         private const int MaxSpawnBatchSize = 5;
         private const int AliveEnemyIncreasePerStep = 2;
         private const int MaxAliveEnemyLimit = 25;
-        private const double MaximumOfflineSeconds = 12d * 60d * 60d;
-        private const double OfflineRewardRate = .3d;
 
         [SerializeField] private StageDatabase stageDatabase;
         [SerializeField] private EquipmentDatabase equipmentDatabase;
@@ -57,6 +55,7 @@ namespace LostFamiliar.Battle
         public EquipmentDatabase EquipmentDatabase => equipmentDatabase;
         public EquipmentInventory EquipmentInventory { get; private set; }
         public UpgradeSystem UpgradeSystem { get; private set; }
+        public OfflineRewardSystem OfflineRewardSystem { get; private set; }
         public PlayerAutoCombat Player => player;
         public BattlePhase Phase { get; private set; }
         public int StageNumber { get; private set; } = 1;
@@ -66,11 +65,9 @@ namespace LostFamiliar.Battle
         public float BossTimeRemaining { get; private set; }
         public float BossTimeLimit => CurrentStage?.bossTimeLimit ?? 0f;
         public double Gold => _saveData?.gold ?? 0d;
-        public double PendingOfflineGold => _saveData?.pendingOfflineGold ?? 0d;
-        public double PendingOfflineSeconds => _saveData?.pendingOfflineSeconds ?? 0d;
-        public float OfflineRewardProgress01 => (float)Math.Min(
-            1d,
-            Math.Max(0d, PendingOfflineSeconds / MaximumOfflineSeconds));
+        public double PendingOfflineGold => OfflineRewardSystem?.PendingGold ?? 0d;
+        public double PendingOfflineSeconds => OfflineRewardSystem?.PendingSeconds ?? 0d;
+        public float OfflineRewardProgress01 => OfflineRewardSystem?.Progress01 ?? 0f;
         public int Gems => _saveData?.gems ?? 0;
         public int PlayerLevel => _saveData?.playerLevel ?? 1;
         public double PlayerExperience => _saveData?.playerExperience ?? 0d;
@@ -119,7 +116,8 @@ namespace LostFamiliar.Battle
             _saveData ??= SaveService.Load();
             _saveData.Normalize();
             UpgradeSystem = new UpgradeSystem(_saveData);
-            double offlineSeconds = CaptureOfflineElapsedSeconds();
+            OfflineRewardSystem = new OfflineRewardSystem(_saveData);
+            double offlineSeconds = OfflineRewardSystem?.CaptureElapsedSeconds() ?? 0d;
             RefreshDailyTowerTickets();
             equipmentDatabase ??= Resources.Load<EquipmentDatabase>("Equipment/DefaultEquipmentDatabase");
             InitializeEquipmentInventory();
@@ -159,7 +157,7 @@ namespace LostFamiliar.Battle
             }
             if (rewardFeed != null)
                 rewardFeed.Bind(this);
-            QueueOfflineGold(offlineSeconds);
+            QueueOfflineReward(offlineSeconds);
             BindOfflineRewardPopup();
 
             GameObject guideMissionPanel = GameObject.Find("Canvas/SafeArea/GuideMissionPanel");
@@ -671,6 +669,7 @@ namespace LostFamiliar.Battle
             _saveData = new GameSaveData();
             _saveData.Normalize();
             UpgradeSystem = new UpgradeSystem(_saveData);
+            OfflineRewardSystem = new OfflineRewardSystem(_saveData);
             InitializeEquipmentInventory();
             StageNumber = 1;
             StageExperience = 0;
@@ -1402,81 +1401,31 @@ namespace LostFamiliar.Battle
 
         private void NotifyStateChanged() => StateChanged?.Invoke();
 
-        private double CaptureOfflineElapsedSeconds()
+        private void QueueOfflineReward(double elapsedSeconds)
         {
-            if (_saveData == null)
-                return 0d;
-
-            long nowTicks = DateTime.UtcNow.Ticks;
-            long previousTicks = _saveData.lastSavedUtcTicks;
-            _saveData.lastSavedUtcTicks = nowTicks;
-            if (previousTicks <= 0L || previousTicks > nowTicks)
-                return 0d;
-
-            double elapsed = TimeSpan.FromTicks(nowTicks - previousTicks).TotalSeconds;
-            return Math.Min(MaximumOfflineSeconds, Math.Max(0d, elapsed));
-        }
-
-        private void QueueOfflineGold(double elapsedSeconds)
-        {
-            if (_saveData == null || CurrentStage?.region == null || elapsedSeconds <= 0d)
+            if (OfflineRewardSystem == null)
                 return;
 
-            double remainingSeconds = Math.Max(
-                0d,
-                MaximumOfflineSeconds - _saveData.pendingOfflineSeconds);
-            elapsedSeconds = Math.Min(elapsedSeconds, remainingSeconds);
-            if (elapsedSeconds <= 0d)
+            bool changed = OfflineRewardSystem.QueueReward(
+                elapsedSeconds,
+                CurrentStage,
+                StageNumber,
+                player,
+                GetCurrentSpawnBatchSize(),
+                GetCurrentSpawnInterval());
+
+            if (!changed)
                 return;
 
-            double goldPerEnemy = GetCurrentAverageEnemyGold();
-            if (goldPerEnemy <= 0d)
-            {
-                _saveData.pendingOfflineSeconds += elapsedSeconds;
-                Save();
-                NotifyStateChanged();
-                return;
-            }
-
-            double spawnLimitPerSecond = GetCurrentSpawnBatchSize() / (double)GetCurrentSpawnInterval();
-            double averageEnemyHealth = GetCurrentAverageEnemyHealth();
-            double enemiesPerSecond = player != null
-                ? player.EstimateOfflineKillsPerSecond(averageEnemyHealth, spawnLimitPerSecond)
-                : 0d;
-            if (enemiesPerSecond <= 0d)
-            {
-                _saveData.pendingOfflineSeconds += elapsedSeconds;
-                Save();
-                NotifyStateChanged();
-                return;
-            }
-            double reward = Math.Floor(
-                goldPerEnemy * enemiesPerSecond * elapsedSeconds * OfflineRewardRate);
-            if (double.IsNaN(reward) || reward <= 0d)
-            {
-                _saveData.pendingOfflineSeconds += elapsedSeconds;
-                Save();
-                NotifyStateChanged();
-                return;
-            }
-
-            reward = Math.Min(reward, double.MaxValue - Math.Max(0d, _saveData.pendingOfflineGold));
-            _saveData.pendingOfflineGold += reward;
-            _saveData.pendingOfflineSeconds += elapsedSeconds;
             Save();
             NotifyStateChanged();
         }
 
         public bool TryReceiveOfflineReward()
         {
-            if (_saveData == null || _saveData.pendingOfflineSeconds <= 0d)
+            if (OfflineRewardSystem == null || !OfflineRewardSystem.TryReceive())
                 return false;
 
-            double reward = Math.Max(0d, _saveData.pendingOfflineGold);
-            _saveData.pendingOfflineGold = 0d;
-            _saveData.pendingOfflineSeconds = 0d;
-            reward = Math.Min(reward, double.MaxValue - Math.Max(0d, _saveData.gold));
-            _saveData.gold += reward;
             Save();
             NotifyStateChanged();
             return true;
@@ -1503,54 +1452,6 @@ namespace LostFamiliar.Battle
             controller.Bind(this);
         }
 
-        private double GetCurrentAverageEnemyGold()
-        {
-            EnemySpawnEntry[] entries = CurrentStage.region.normalEnemies;
-            if (entries == null || entries.Length == 0)
-                return 0d;
-
-            int stageInRegion = Mathf.Max(1, StageNumber - CurrentStage.region.startStage + 1);
-            long totalWeight = 0L;
-            double weightedGold = 0d;
-            foreach (EnemySpawnEntry entry in entries)
-            {
-                if (entry?.enemy == null || entry.unlockStageInRegion > stageInRegion)
-                    continue;
-
-                int weight = Mathf.Max(1, entry.weight);
-                totalWeight += weight;
-                weightedGold += entry.enemy.goldReward * weight;
-            }
-
-            return totalWeight <= 0L
-                ? 0d
-                : weightedGold / totalWeight * CurrentStage.rewardMultiplier;
-        }
-
-        private double GetCurrentAverageEnemyHealth()
-        {
-            EnemySpawnEntry[] entries = CurrentStage.region.normalEnemies;
-            if (entries == null || entries.Length == 0)
-                return 0d;
-
-            int stageInRegion = Mathf.Max(1, StageNumber - CurrentStage.region.startStage + 1);
-            long totalWeight = 0L;
-            double weightedHealth = 0d;
-            foreach (EnemySpawnEntry entry in entries)
-            {
-                if (entry?.enemy == null || entry.unlockStageInRegion > stageInRegion)
-                    continue;
-
-                int weight = Mathf.Max(1, entry.weight);
-                totalWeight += weight;
-                weightedHealth += entry.enemy.baseHealth * weight;
-            }
-
-            return totalWeight <= 0L
-                ? 0d
-                : weightedHealth / totalWeight * CurrentStage.healthMultiplier;
-        }
-
         private void Save()
         {
             if (_saveData != null)
@@ -1563,9 +1464,16 @@ namespace LostFamiliar.Battle
         private void OnApplicationPause(bool paused)
         {
             if (paused)
+            {
                 Save();
-            else if (_initialized)
-                QueueOfflineGold(CaptureOfflineElapsedSeconds());
+                return;
+            }
+
+            if (!_initialized || OfflineRewardSystem == null)
+                return;
+
+            double elapsed = OfflineRewardSystem.CaptureElapsedSeconds();
+            QueueOfflineReward(elapsed);
         }
 
         private void OnApplicationQuit() => Save();
