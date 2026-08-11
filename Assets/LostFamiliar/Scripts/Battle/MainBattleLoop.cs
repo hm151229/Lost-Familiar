@@ -24,6 +24,14 @@ namespace LostFamiliar.Battle
         [SerializeField] private EquipmentDatabase equipmentDatabase;
         [SerializeField] private PlayerAutoCombat player;
         [SerializeField] private Transform bossSpawnPoint;
+
+        [Header("UI")]
+        [SerializeField] private BossChallengeButtonPresenter bossChallengePresenter;
+        [SerializeField] private MainHUDController mainHud;
+        [SerializeField] private RewardFeedController rewardFeed;
+        [SerializeField] private GuideMissionPanelController guideMissionPanel;
+        [SerializeField] private OfflineRewardPopupController offlineRewardPopup;
+
         [SerializeField] private Vector3 bossPlayerPosition = new Vector3(-1.35f, -.8f, 0f);
         [SerializeField, Min(1f)] private float bossSpawnDistance = 2.8f;
 
@@ -1148,105 +1156,23 @@ namespace LostFamiliar.Battle
 
         private void BindRuntimeUi()
         {
-            BindBossChallengePresenter();
-            BindMainHud();
-            BindRewardFeed();
-            BindOfflineRewardPopup();
-            BindGuideMissionPanel();
-        }
-
-        private void BindBossChallengePresenter()
-        {
-            BossChallengeButtonPresenter presenter =
-                GetComponent<BossChallengeButtonPresenter>();
-
-            if (presenter == null)
-            {
-                presenter =
-                    gameObject.AddComponent<BossChallengeButtonPresenter>();
-            }
-
-            presenter.Bind(this);
-        }
-
-        private void BindMainHud()
-        {
-            MainHUDController hud =
-                UnityEngine.Object.FindFirstObjectByType<MainHUDController>();
-
-            if (hud == null)
-            {
-                hud = gameObject.AddComponent<MainHUDController>();
-            }
-
-            hud.Bind(this);
-        }
-
-        private void BindRewardFeed()
-        {
-            RewardFeedController rewardFeed =
-                UnityEngine.Object.FindFirstObjectByType<RewardFeedController>();
+            if (mainHud == null)
+                Debug.LogWarning("MainHUDController가 연결되지 않았습니다.", this);
 
             if (rewardFeed == null)
-            {
-                GameObject rewardFeedObject =
-                    GameObject.Find("Canvas/SafeArea/RewardFeed");
+                Debug.LogWarning("RewardFeedController가 연결되지 않았습니다.", this);
 
-                if (rewardFeedObject != null)
-                {
-                    rewardFeed =
-                        rewardFeedObject.GetComponent<RewardFeedController>();
+            if (guideMissionPanel == null)
+                Debug.LogWarning("GuideMissionPanelController가 연결되지 않았습니다.", this);
 
-                    if (rewardFeed == null)
-                    {
-                        rewardFeed =
-                            rewardFeedObject.AddComponent<RewardFeedController>();
-                    }
-                }
-            }
+            if (offlineRewardPopup == null)
+                Debug.LogWarning("OfflineRewardPopupController가 연결되지 않았습니다.", this);
 
+            bossChallengePresenter?.Bind(this);
+            mainHud?.Bind(this);
             rewardFeed?.Bind(this);
-        }
-
-        private void BindGuideMissionPanel()
-        {
-            GameObject panel =
-                GameObject.Find("Canvas/SafeArea/GuideMissionPanel");
-
-            if (panel == null)
-                return;
-
-            GuideMissionPanelController controller =
-                panel.GetComponent<GuideMissionPanelController>();
-
-            if (controller == null)
-            {
-                controller =
-                    panel.AddComponent<GuideMissionPanelController>();
-            }
-
-            controller.Bind(this);
-        }
-
-        private void BindOfflineRewardPopup()
-        {
-            GameObject popup = null;
-            foreach (Transform candidate in Resources.FindObjectsOfTypeAll<Transform>())
-            {
-                if (candidate != null && candidate.name == "OfflineRewardPopup" &&
-                    candidate.gameObject.scene.IsValid())
-                {
-                    popup = candidate.gameObject;
-                    break;
-                }
-            }
-
-            if (popup == null)
-                return;
-            OfflineRewardPopupController controller =
-                popup.GetComponent<OfflineRewardPopupController>() ??
-                popup.AddComponent<OfflineRewardPopupController>();
-            controller.Bind(this);
+            guideMissionPanel?.Bind(this);
+            offlineRewardPopup?.Bind(this);
         }
 
         private void Save()

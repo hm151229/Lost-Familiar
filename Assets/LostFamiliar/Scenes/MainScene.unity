@@ -4341,10 +4341,10 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   m_IgnoreLayout: 0
-  m_MinWidth: 227.36842
-  m_MinHeight: 174.89879
-  m_PreferredWidth: 227.36842
-  m_PreferredHeight: 174.89879
+  m_MinWidth: 270
+  m_MinHeight: 207.69232
+  m_PreferredWidth: 270
+  m_PreferredHeight: 207.69232
   m_FlexibleWidth: 0
   m_FlexibleHeight: 0
   m_LayoutPriority: 1
@@ -12788,6 +12788,7 @@ GameObject:
   - component: {fileID: 591576255}
   - component: {fileID: 591576254}
   - component: {fileID: 591576256}
+  - component: {fileID: 591576257}
   m_Layer: 5
   m_Name: GuideMissionPanel
   m_TagString: Untagged
@@ -12900,6 +12901,24 @@ MonoBehaviour:
   m_OnClick:
     m_PersistentCalls:
       m_Calls: []
+--- !u!114 &591576257
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 591576252}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 25f1177bd6e340afbe4b9454fd7bff03, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  panelButton: {fileID: 591576256}
+  titleText: {fileID: 0}
+  missionText: {fileID: 0}
+  rewardAmountText: {fileID: 0}
+  rewardIconImage: {fileID: 0}
+  clearIconImage: {fileID: 0}
 --- !u!1001 &592863060
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -18813,10 +18832,10 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   m_IgnoreLayout: 0
-  m_MinWidth: 227.36842
-  m_MinHeight: 174.89879
-  m_PreferredWidth: 227.36842
-  m_PreferredHeight: 174.89879
+  m_MinWidth: 270
+  m_MinHeight: 207.69232
+  m_PreferredWidth: 270
+  m_PreferredHeight: 207.69232
   m_FlexibleWidth: 0
   m_FlexibleHeight: 0
   m_LayoutPriority: 1
@@ -21432,6 +21451,7 @@ GameObject:
   - component: {fileID: 1024939043}
   - component: {fileID: 1024939042}
   - component: {fileID: 1024939041}
+  - component: {fileID: 1024939044}
   m_Layer: 5
   m_Name: BossChallengeButton
   m_TagString: Untagged
@@ -21541,6 +21561,20 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1024939039}
   m_CullTransparentMesh: 1
+--- !u!114 &1024939044
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1024939039}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c5bb85c177e2e9f428901cfc86ead077, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  buttonRoot: {fileID: 1024939039}
+  challengeButton: {fileID: 1024939041}
 --- !u!1 &1026979582
 GameObject:
   m_ObjectHideFlags: 0
@@ -22569,10 +22603,10 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   m_IgnoreLayout: 0
-  m_MinWidth: 227.36842
-  m_MinHeight: 174.89879
-  m_PreferredWidth: 227.36842
-  m_PreferredHeight: 174.89879
+  m_MinWidth: 270
+  m_MinHeight: 207.69232
+  m_PreferredWidth: 270
+  m_PreferredHeight: 207.69232
   m_FlexibleWidth: 0
   m_FlexibleHeight: 0
   m_LayoutPriority: 1
@@ -26049,6 +26083,7 @@ GameObject:
   - component: {fileID: 1202143027}
   - component: {fileID: 1202143029}
   - component: {fileID: 1202143028}
+  - component: {fileID: 1202143030}
   m_Layer: 5
   m_Name: OfflineRewardPopup
   m_TagString: Untagged
@@ -26118,6 +26153,18 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1202143026}
   m_CullTransparentMesh: 1
+--- !u!114 &1202143030
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1202143026}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b73d0a6e214c4f85a931702d68ec5f49, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!1 &1202300107
 GameObject:
   m_ObjectHideFlags: 0
@@ -35521,6 +35568,11 @@ MonoBehaviour:
   equipmentDatabase: {fileID: 11400000, guid: 593027502bc9815458c759ccc47bc0a7, type: 2}
   player: {fileID: 323298374}
   bossSpawnPoint: {fileID: 0}
+  bossChallengePresenter: {fileID: 1024939044}
+  mainHud: {fileID: 725859380}
+  rewardFeed: {fileID: 659703388}
+  guideMissionPanel: {fileID: 591576257}
+  offlineRewardPopup: {fileID: 1202143030}
   bossPlayerPosition: {x: -1.35, y: -0.8, z: 0}
   bossSpawnDistance: 2.8
 --- !u!1001 &1582422707
@@ -40580,10 +40632,10 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   m_IgnoreLayout: 0
-  m_MinWidth: 227.36842
-  m_MinHeight: 174.89879
-  m_PreferredWidth: 227.36842
-  m_PreferredHeight: 174.89879
+  m_MinWidth: 270
+  m_MinHeight: 207.69232
+  m_PreferredWidth: 270
+  m_PreferredHeight: 207.69232
   m_FlexibleWidth: 0
   m_FlexibleHeight: 0
   m_LayoutPriority: 1
