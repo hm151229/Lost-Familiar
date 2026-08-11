@@ -56,6 +56,7 @@ namespace LostFamiliar.Battle
         public EquipmentInventory EquipmentInventory { get; private set; }
         public UpgradeSystem UpgradeSystem { get; private set; }
         public OfflineRewardSystem OfflineRewardSystem { get; private set; }
+        public GuideMissionSystem GuideMissionSystem { get; private set; }
         public PlayerAutoCombat Player => player;
         public BattlePhase Phase { get; private set; }
         public int StageNumber { get; private set; } = 1;
@@ -87,8 +88,11 @@ namespace LostFamiliar.Battle
             _saveData.bossRetryRequired &&
             StageExperience >= CurrentStage.experienceToBoss;
         public GuideMissionDefinition CurrentGuideMission =>
-            GuideMissionCatalog.Get(_saveData?.guideMissionIndex ?? 0);
-        public int GuideMissionProgress => GetGuideMissionProgress(CurrentGuideMission);
+            GuideMissionSystem?.CurrentMission ?? GuideMissionCatalog.Get(0);
+        public int GuideMissionProgress =>
+            GuideMissionSystem?.GetProgress(
+                CurrentGuideMission,
+                Math.Max(0, StageNumber - 1)) ?? 0;
         public bool CanClaimGuideMission => GuideMissionProgress >= CurrentGuideMission.target;
 
         public event Action StateChanged;
@@ -117,6 +121,7 @@ namespace LostFamiliar.Battle
             _saveData.Normalize();
             UpgradeSystem = new UpgradeSystem(_saveData);
             OfflineRewardSystem = new OfflineRewardSystem(_saveData);
+            GuideMissionSystem = new GuideMissionSystem(_saveData);
             double offlineSeconds = OfflineRewardSystem?.CaptureElapsedSeconds() ?? 0d;
             RefreshDailyTowerTickets();
             equipmentDatabase ??= Resources.Load<EquipmentDatabase>("Equipment/DefaultEquipmentDatabase");
@@ -670,6 +675,7 @@ namespace LostFamiliar.Battle
             _saveData.Normalize();
             UpgradeSystem = new UpgradeSystem(_saveData);
             OfflineRewardSystem = new OfflineRewardSystem(_saveData);
+            GuideMissionSystem = new GuideMissionSystem(_saveData);
             InitializeEquipmentInventory();
             StageNumber = 1;
             StageExperience = 0;
@@ -995,65 +1001,23 @@ namespace LostFamiliar.Battle
 
         public bool TryClaimGuideMission()
         {
-            if (_saveData == null)
+            if (GuideMissionSystem == null ||
+                !GuideMissionSystem.TryClaim(
+                    Math.Max(0, StageNumber - 1),
+                    out GuideMissionDefinition mission))
                 return false;
 
-            GuideMissionDefinition mission = CurrentGuideMission;
-            if (GetGuideMissionProgress(mission) < mission.target)
-                return false;
-
-            int reward = mission.gemReward;
-            _saveData.gems += reward;
-            if (mission.goldTowerTicketReward > 0)
-                _saveData.GetTower(TowerType.Gold).tickets = (int)Math.Min(
-                    int.MaxValue,
-                    (long)_saveData.GetTower(TowerType.Gold).tickets + mission.goldTowerTicketReward);
-            if (mission.gemTowerTicketReward > 0)
-                _saveData.GetTower(TowerType.Gem).tickets = (int)Math.Min(
-                    int.MaxValue,
-                    (long)_saveData.GetTower(TowerType.Gem).tickets + mission.gemTowerTicketReward);
-            _saveData.guideMissionIndex = (int)Math.Min(
-                int.MaxValue,
-                (long)Math.Max(0, _saveData.guideMissionIndex) + 1L);
-            _saveData.guideMissionProgress = 0;
             GameAudioManager.Instance.PlaySfx("SFX_Mission_Complete");
-            if (reward > 0)
-                PublishReward(RewardType.Gem, reward);
+            if (mission.gemReward > 0)
+                PublishReward(RewardType.Gem, mission.gemReward);
             Save();
             NotifyStateChanged();
             return true;
         }
 
-        private int GetGuideMissionProgress(GuideMissionDefinition mission)
-        {
-            if (_saveData == null)
-                return 0;
-
-            int progress = mission.type switch
-            {
-                GuideMissionType.DefeatMonsters => _saveData.guideMissionProgress,
-                GuideMissionType.Gacha => _saveData.guideMissionProgress,
-                GuideMissionType.ClearStage => Mathf.Max(0, StageNumber - 1),
-                GuideMissionType.ReachStatLevel => _saveData.GetStatLevel(mission.statType),
-                GuideMissionType.ReachTotalUpgradeLevel => _saveData.TotalUpgradeLevel,
-                GuideMissionType.ClearGoldTower => _saveData.guideMissionProgress,
-                GuideMissionType.ClearGemTower => _saveData.guideMissionProgress,
-                _ => 0
-            };
-            return Mathf.Clamp(progress, 0, mission.target);
-        }
-
         private void AddGuideMissionActionProgress(GuideMissionType type, int amount)
         {
-            if (_saveData == null || amount <= 0)
-                return;
-
-            GuideMissionDefinition mission = CurrentGuideMission;
-            if (mission.type != type)
-                return;
-
-            long next = (long)_saveData.guideMissionProgress + amount;
-            _saveData.guideMissionProgress = (int)Math.Min(mission.target, next);
+            GuideMissionSystem?.AddActionProgress(type, amount);
         }
 
         private List<EquipmentData> GetEquipmentGachaPool(GachaCategory category)
