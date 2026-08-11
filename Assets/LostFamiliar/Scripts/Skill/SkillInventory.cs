@@ -12,6 +12,8 @@ namespace LostFamiliar.Battle
         private readonly GameSaveData _saveData;
         private readonly SkillData[] _skills;
 
+        public IReadOnlyList<SkillData> AllSkills => _skills;
+
         public SkillInventory(GameSaveData saveData)
         {
             _saveData = saveData;

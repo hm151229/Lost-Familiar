@@ -11,29 +11,6 @@ namespace LostFamiliar.Battle
 {
     public enum BattlePhase { Normal, EnteringBoss, Boss, Returning, StageClear }
 
-    public readonly struct GachaReward
-    {
-        public readonly EquipmentData equipment;
-        public readonly SkillData skill;
-        public readonly EquipmentRarity rarity;
-
-        public GachaReward(EquipmentData equipment)
-        {
-            this.equipment = equipment;
-            skill = null;
-            rarity = equipment != null ? equipment.rarity : EquipmentRarity.Common;
-        }
-
-        public GachaReward(SkillData skill)
-        {
-            equipment = null;
-            this.skill = skill;
-            rarity = skill != null ? skill.rarity : EquipmentRarity.Common;
-        }
-
-        public string DisplayName => equipment != null ? equipment.displayName : skill?.displayName ?? string.Empty;
-    }
-
     public sealed class MainBattleLoop : MonoBehaviour
     {
         private const int SpawnGrowthStageInterval = 10;
@@ -55,6 +32,7 @@ namespace LostFamiliar.Battle
         public EquipmentDatabase EquipmentDatabase => equipmentDatabase;
         public EquipmentInventory EquipmentInventory { get; private set; }
         public SkillInventory SkillInventory { get; private set; }
+        public GachaSystem GachaSystem { get; private set; }
         public UpgradeSystem UpgradeSystem { get; private set; }
         public OfflineRewardSystem OfflineRewardSystem { get; private set; }
         public GuideMissionSystem GuideMissionSystem { get; private set; }
@@ -128,6 +106,7 @@ namespace LostFamiliar.Battle
             equipmentDatabase ??= Resources.Load<EquipmentDatabase>("Equipment/DefaultEquipmentDatabase");
             InitializeEquipmentInventory();
             SkillInventory = new SkillInventory(_saveData);
+            GachaSystem = new GachaSystem(_saveData, equipmentDatabase, SkillInventory);
             StageNumber = Mathf.Max(1, _saveData.stage);
             RebuildCurrentStage();
 
@@ -680,6 +659,7 @@ namespace LostFamiliar.Battle
             GuideMissionSystem = new GuideMissionSystem(_saveData);
             InitializeEquipmentInventory();
             SkillInventory = new SkillInventory(_saveData);
+            GachaSystem = new GachaSystem(_saveData, equipmentDatabase, SkillInventory);
             StageNumber = 1;
             StageExperience = 0;
             CurrentBoss = null;
@@ -947,44 +927,23 @@ namespace LostFamiliar.Battle
             NotifyStateChanged();
         }
 
-        public int GetGachaLevel(GachaCategory category) => _saveData?.GetGachaLevel(category) ?? 1;
-        public int GetGachaProgress(GachaCategory category) => _saveData?.GetGachaProgress(category) ?? 0;
+        public int GetGachaLevel(GachaCategory category)
+        {
+            return GachaSystem?.GetLevel(category) ?? 1;
+        }
+
+        public int GetGachaProgress(GachaCategory category)
+        {
+            return GachaSystem?.GetProgress(category) ?? 0;
+        }
 
         public bool TryGacha(GachaCategory category, int drawCount, out List<GachaReward> rewards)
         {
             rewards = new List<GachaReward>();
-            if (_saveData == null || (drawCount != 10 && drawCount != 30))
+            if (GachaSystem == null ||
+                !GachaSystem.TryDraw(category, drawCount, out rewards))
                 return false;
 
-            int cost = GachaBalance.Cost(drawCount);
-            if (_saveData.gems < cost)
-                return false;
-
-            int level = _saveData.GetGachaLevel(category);
-            if (category == GachaCategory.Skill)
-            {
-                SkillData[] skills = Resources.LoadAll<SkillData>("StageData/Skills");
-                if (skills == null || skills.Length == 0)
-                    return false;
-                RollSkills(skills, level, drawCount, rewards);
-            }
-            else
-            {
-                List<EquipmentData> pool = GetEquipmentGachaPool(category);
-                if (pool.Count == 0)
-                    return false;
-                RollEquipment(pool, level, drawCount, rewards);
-            }
-
-            if (rewards.Count != drawCount)
-            {
-                rewards.Clear();
-                return false;
-            }
-
-            _saveData.gems -= cost;
-            _saveData.AddGachaProgress(category, drawCount);
-            AddGuideMissionActionProgress(GuideMissionType.Gacha, drawCount);
             List<string> equipmentIds = new List<string>();
             foreach (GachaReward reward in rewards)
             {
@@ -995,6 +954,9 @@ namespace LostFamiliar.Battle
             }
             if (equipmentIds.Count > 0)
                 EquipmentInventory?.GrantBatch(equipmentIds);
+
+            GuideMissionSystem?.AddActionProgress(GuideMissionType.Gacha, drawCount);
+
             if (category == GachaCategory.Skill)
                 ApplyPlayerProgression();
             Save();
@@ -1021,56 +983,6 @@ namespace LostFamiliar.Battle
         private void AddGuideMissionActionProgress(GuideMissionType type, int amount)
         {
             GuideMissionSystem?.AddActionProgress(type, amount);
-        }
-
-        private List<EquipmentData> GetEquipmentGachaPool(GachaCategory category)
-        {
-            List<EquipmentData> pool = new List<EquipmentData>();
-            if (equipmentDatabase?.items == null)
-                return pool;
-            foreach (EquipmentData item in equipmentDatabase.items)
-            {
-                if (item == null)
-                    continue;
-                bool matches = category switch
-                {
-                    GachaCategory.Armor => item.type == EquipmentType.Head || item.type == EquipmentType.Body || item.type == EquipmentType.Shoes,
-                    GachaCategory.Accessory => item.type == EquipmentType.Accessory,
-                    GachaCategory.Weapon => item.type == EquipmentType.Weapon,
-                    _ => false
-                };
-                if (matches)
-                    pool.Add(item);
-            }
-            return pool;
-        }
-
-        private static void RollEquipment(List<EquipmentData> pool, int level, int count, List<GachaReward> output)
-        {
-            HashSet<EquipmentRarity> available = new HashSet<EquipmentRarity>();
-            foreach (EquipmentData item in pool)
-                available.Add(item.rarity);
-            for (int i = 0; i < count; i++)
-            {
-                EquipmentRarity rarity = GachaBalance.RollRarity(level, available);
-                List<EquipmentData> candidates = pool.FindAll(item => item.rarity == rarity);
-                output.Add(new GachaReward(candidates[UnityEngine.Random.Range(0, candidates.Count)]));
-            }
-        }
-
-        private static void RollSkills(SkillData[] pool, int level, int count, List<GachaReward> output)
-        {
-            HashSet<EquipmentRarity> available = new HashSet<EquipmentRarity>();
-            foreach (SkillData item in pool)
-                if (item != null) available.Add(item.rarity);
-            for (int i = 0; i < count; i++)
-            {
-                EquipmentRarity rarity = GachaBalance.RollRarity(level, available);
-                List<SkillData> candidates = new List<SkillData>();
-                foreach (SkillData item in pool)
-                    if (item != null && item.rarity == rarity) candidates.Add(item);
-                output.Add(new GachaReward(candidates[UnityEngine.Random.Range(0, candidates.Count)]));
-            }
         }
 
         public int CheatGrantAllSkills()
