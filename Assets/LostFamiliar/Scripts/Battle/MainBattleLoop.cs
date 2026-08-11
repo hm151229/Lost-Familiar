@@ -54,6 +54,7 @@ namespace LostFamiliar.Battle
         public StageDatabase Database => stageDatabase;
         public EquipmentDatabase EquipmentDatabase => equipmentDatabase;
         public EquipmentInventory EquipmentInventory { get; private set; }
+        public SkillInventory SkillInventory { get; private set; }
         public UpgradeSystem UpgradeSystem { get; private set; }
         public OfflineRewardSystem OfflineRewardSystem { get; private set; }
         public GuideMissionSystem GuideMissionSystem { get; private set; }
@@ -126,6 +127,7 @@ namespace LostFamiliar.Battle
             RefreshDailyTowerTickets();
             equipmentDatabase ??= Resources.Load<EquipmentDatabase>("Equipment/DefaultEquipmentDatabase");
             InitializeEquipmentInventory();
+            SkillInventory = new SkillInventory(_saveData);
             StageNumber = Mathf.Max(1, _saveData.stage);
             RebuildCurrentStage();
 
@@ -677,6 +679,7 @@ namespace LostFamiliar.Battle
             OfflineRewardSystem = new OfflineRewardSystem(_saveData);
             GuideMissionSystem = new GuideMissionSystem(_saveData);
             InitializeEquipmentInventory();
+            SkillInventory = new SkillInventory(_saveData);
             StageNumber = 1;
             StageExperience = 0;
             CurrentBoss = null;
@@ -988,7 +991,7 @@ namespace LostFamiliar.Battle
                 if (reward.equipment != null)
                     equipmentIds.Add(reward.equipment.Id);
                 else if (reward.skill != null)
-                    GrantSkill(reward.skill);
+                    SkillInventory?.Grant(reward.skill.id);
             }
             if (equipmentIds.Count > 0)
                 EquipmentInventory?.GrantBatch(equipmentIds);
@@ -1070,19 +1073,10 @@ namespace LostFamiliar.Battle
             }
         }
 
-        private void GrantSkill(SkillData skill)
-        {
-            SkillSaveEntry entry = _saveData.GetOrCreateSkill(skill.id);
-            if (entry.level <= 0)
-                entry.level = 1;
-            else
-                entry.duplicates++;
-        }
-
         public int CheatGrantAllSkills()
         {
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
-            if (_saveData == null)
+            if (SkillInventory == null)
                 return 0;
 
             int grantedCount = 0;
@@ -1091,13 +1085,12 @@ namespace LostFamiliar.Battle
                 if (skill == null || string.IsNullOrWhiteSpace(skill.id))
                     continue;
 
-                SkillSaveEntry entry = _saveData.GetOrCreateSkill(skill.id);
-                if (entry.level > 0)
+                SkillSaveEntry entry = SkillInventory.GetState(skill.id);
+                if (entry != null && entry.level > 0)
                     continue;
 
-                entry.level = 1;
-                entry.duplicates = 0;
-                grantedCount++;
+                if (SkillInventory.Grant(skill.id) != null)
+                    grantedCount++;
             }
 
             ApplyPlayerProgression();
@@ -1112,53 +1105,38 @@ namespace LostFamiliar.Battle
 
         public IReadOnlyList<SkillData> GetOwnedSkills()
         {
-            List<SkillData> owned = new List<SkillData>();
-            foreach (SkillData skill in Resources.LoadAll<SkillData>("StageData/Skills"))
-            {
-                SkillSaveEntry state = GetSkillState(skill != null ? skill.id : null);
-                if (skill != null && state != null && state.level > 0)
-                    owned.Add(skill);
-            }
-            owned.Sort((left, right) =>
-            {
-                int rarity = right.rarity.CompareTo(left.rarity);
-                return rarity != 0 ? rarity : string.Compare(left.displayName, right.displayName, StringComparison.Ordinal);
-            });
-            return owned;
+            return SkillInventory?.GetOwnedSkills() ?? Array.Empty<SkillData>();
         }
 
         public SkillSaveEntry GetSkillState(string skillId)
         {
-            if (_saveData?.skillInventory == null || string.IsNullOrWhiteSpace(skillId))
-                return null;
-            return _saveData.skillInventory.Find(entry => entry != null && entry.skillId == skillId);
+            return SkillInventory?.GetState(skillId);
         }
 
-        public int UnlockedSkillSlotCount => SkillBalance.UnlockedSlotCount(PlayerLevel);
+        public int UnlockedSkillSlotCount =>
+            SkillInventory?.GetUnlockedSlotCount(PlayerLevel) ?? 0;
 
-        public bool IsSkillSlotUnlocked(int slotIndex) =>
-            slotIndex >= 0 && slotIndex < UnlockedSkillSlotCount;
+        public bool IsSkillSlotUnlocked(int slotIndex)
+        {
+            return SkillInventory?.IsSlotUnlocked(slotIndex, PlayerLevel) ?? false;
+        }
 
         public string GetEquippedSkillId(int slotIndex)
         {
-            EnsureEquippedSkillSlots();
-            return slotIndex >= 0 && slotIndex < _saveData.equippedSkillIds.Count
-                ? _saveData.equippedSkillIds[slotIndex]
-                : string.Empty;
+            return SkillInventory?.GetEquippedSkillId(slotIndex) ?? string.Empty;
         }
 
-        public SkillData GetEquippedSkill(int slotIndex) => FindSkill(GetEquippedSkillId(slotIndex));
+        public SkillData GetEquippedSkill(int slotIndex)
+        {
+            return SkillInventory?.GetEquippedSkill(slotIndex);
+        }
 
         public bool TryEquipSkill(string skillId, int slotIndex)
         {
-            SkillSaveEntry state = GetSkillState(skillId);
-            if (!IsSkillSlotUnlocked(slotIndex) || state == null || state.level <= 0)
+            if (SkillInventory == null ||
+                !SkillInventory.TryEquip(skillId, slotIndex, PlayerLevel))
                 return false;
 
-            EnsureEquippedSkillSlots();
-            for (int i = 0; i < _saveData.equippedSkillIds.Count; i++)
-                if (_saveData.equippedSkillIds[i] == skillId) _saveData.equippedSkillIds[i] = string.Empty;
-            _saveData.equippedSkillIds[slotIndex] = skillId;
             SyncEquippedSkills();
             Save();
             NotifyStateChanged();
@@ -1167,11 +1145,10 @@ namespace LostFamiliar.Battle
 
         public void UnequipSkill(int slotIndex)
         {
-            EnsureEquippedSkillSlots();
-            if (slotIndex < 0 || slotIndex >= _saveData.equippedSkillIds.Count ||
-                string.IsNullOrEmpty(_saveData.equippedSkillIds[slotIndex]))
+            if (SkillInventory == null ||
+                !SkillInventory.Unequip(slotIndex))
                 return;
-            _saveData.equippedSkillIds[slotIndex] = string.Empty;
+
             SyncEquippedSkills();
             Save();
             NotifyStateChanged();
@@ -1179,19 +1156,15 @@ namespace LostFamiliar.Battle
 
         public bool CanUpgradeSkill(string skillId)
         {
-            SkillData skill = FindSkill(skillId);
-            SkillSaveEntry state = GetSkillState(skillId);
-            return skill != null && state != null && state.level > 0 && state.level < skill.maxLevel &&
-                   state.duplicates >= SkillBalance.DuplicateRequirement(state.level);
+            return SkillInventory?.CanUpgrade(skillId) ?? false;
         }
 
         public bool TryUpgradeSkill(string skillId)
         {
-            if (!CanUpgradeSkill(skillId))
+            if (SkillInventory == null ||
+                !SkillInventory.TryUpgrade(skillId))
                 return false;
-            SkillSaveEntry state = GetSkillState(skillId);
-            state.duplicates -= SkillBalance.DuplicateRequirement(state.level);
-            state.level++;
+
             ApplyPlayerProgression();
             SyncEquippedSkills();
             Save();
@@ -1201,27 +1174,10 @@ namespace LostFamiliar.Battle
 
         public int TryUpgradeAllSkills()
         {
-            if (_saveData?.skillInventory == null)
+            if (SkillInventory == null)
                 return 0;
 
-            int upgradedCount = 0;
-            foreach (SkillData skill in Resources.LoadAll<SkillData>("StageData/Skills"))
-            {
-                if (skill == null)
-                    continue;
-
-                SkillSaveEntry state = GetSkillState(skill.id);
-                while (state != null && state.level > 0 && state.level < skill.maxLevel)
-                {
-                    int required = SkillBalance.DuplicateRequirement(state.level);
-                    if (state.duplicates < required)
-                        break;
-
-                    state.duplicates -= required;
-                    state.level++;
-                    upgradedCount++;
-                }
-            }
+            int upgradedCount = SkillInventory.TryUpgradeAll();
 
             if (upgradedCount <= 0)
                 return 0;
@@ -1275,15 +1231,7 @@ namespace LostFamiliar.Battle
                 return;
 
             EquipmentBonuses bonuses = EquipmentInventory?.CalculateBonuses() ?? default;
-            if (_saveData.skillInventory != null)
-            {
-                foreach (SkillSaveEntry entry in _saveData.skillInventory)
-                {
-                    SkillData skill = entry != null ? FindSkill(entry.skillId) : null;
-                    if (skill != null && entry.level > 0)
-                        bonuses.Add(skill.ownedEffectType, SkillBalance.OwnedEffectValue(skill, entry.level));
-                }
-            }
+            SkillInventory?.AddOwnedBonuses(ref bonuses);
             target.ApplyProgression(_saveData, bonuses);
         }
 
@@ -1294,46 +1242,15 @@ namespace LostFamiliar.Battle
 
         private void SyncEquippedSkills(PlayerAutoCombat target)
         {
-            if (target == null || _saveData == null)
+            if (target == null || SkillInventory == null)
                 return;
-            EnsureEquippedSkillSlots();
-            SkillData[] equipped = new SkillData[SkillBalance.MaxEquippedSkillCount];
-            int[] levels = new int[SkillBalance.MaxEquippedSkillCount];
-            int unlocked = UnlockedSkillSlotCount;
-            for (int i = 0; i < equipped.Length; i++)
-            {
-                if (i >= unlocked)
-                {
-                    _saveData.equippedSkillIds[i] = string.Empty;
-                    continue;
-                }
-                SkillData skill = FindSkill(_saveData.equippedSkillIds[i]);
-                SkillSaveEntry state = GetSkillState(skill != null ? skill.id : null);
-                equipped[i] = state != null && state.level > 0 ? skill : null;
-                levels[i] = state != null && state.level > 0 ? state.level : 1;
-                if (equipped[i] == null) _saveData.equippedSkillIds[i] = string.Empty;
-            }
+
+            SkillInventory.BuildEquippedSkills(
+                PlayerLevel,
+                out SkillData[] equipped,
+                out int[] levels);
+
             target.SetEquippedSkills(equipped, levels);
-        }
-
-        private void EnsureEquippedSkillSlots()
-        {
-            _saveData.equippedSkillIds ??= new List<string>();
-            while (_saveData.equippedSkillIds.Count < SkillBalance.MaxEquippedSkillCount)
-                _saveData.equippedSkillIds.Add(string.Empty);
-            if (_saveData.equippedSkillIds.Count > SkillBalance.MaxEquippedSkillCount)
-                _saveData.equippedSkillIds.RemoveRange(
-                    SkillBalance.MaxEquippedSkillCount,
-                    _saveData.equippedSkillIds.Count - SkillBalance.MaxEquippedSkillCount);
-        }
-
-        private static SkillData FindSkill(string skillId)
-        {
-            if (string.IsNullOrWhiteSpace(skillId))
-                return null;
-            foreach (SkillData skill in Resources.LoadAll<SkillData>("StageData/Skills"))
-                if (skill != null && skill.id == skillId) return skill;
-            return null;
         }
 
         private void RebuildCurrentStage()
