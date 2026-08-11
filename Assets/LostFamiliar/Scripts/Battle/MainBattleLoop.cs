@@ -56,6 +56,7 @@ namespace LostFamiliar.Battle
         public StageDatabase Database => stageDatabase;
         public EquipmentDatabase EquipmentDatabase => equipmentDatabase;
         public EquipmentInventory EquipmentInventory { get; private set; }
+        public UpgradeSystem UpgradeSystem { get; private set; }
         public PlayerAutoCombat Player => player;
         public BattlePhase Phase { get; private set; }
         public int StageNumber { get; private set; } = 1;
@@ -117,6 +118,7 @@ namespace LostFamiliar.Battle
             player = playerActor;
             _saveData ??= SaveService.Load();
             _saveData.Normalize();
+            UpgradeSystem = new UpgradeSystem(_saveData);
             double offlineSeconds = CaptureOfflineElapsedSeconds();
             RefreshDailyTowerTickets();
             equipmentDatabase ??= Resources.Load<EquipmentDatabase>("Equipment/DefaultEquipmentDatabase");
@@ -604,19 +606,12 @@ namespace LostFamiliar.Battle
 
         public int TryUpgradeMany(StatType type, int requestedLevels)
         {
-            if (_saveData == null || requestedLevels <= 0)
+            if (UpgradeSystem == null)
                 return 0;
 
-            int upgradedLevels = GetUpgradeLevelCount(type, requestedLevels);
+            int upgradedLevels = UpgradeSystem.TryUpgrade(type, requestedLevels);
             if (upgradedLevels <= 0)
                 return 0;
-
-            double totalCost = GetUpgradeCost(type, upgradedLevels);
-            if (_saveData.gold < totalCost)
-                return 0;
-
-            _saveData.gold -= totalCost;
-            _saveData.IncreaseStatLevels(type, upgradedLevels);
 
             ApplyPlayerProgression();
             Save();
@@ -624,19 +619,20 @@ namespace LostFamiliar.Battle
             return upgradedLevels;
         }
 
-        public int GetStatLevel(StatType type) => _saveData?.GetStatLevel(type) ?? 0;
-        public int TotalUpgradeLevel => _saveData?.TotalUpgradeLevel ?? 1;
-        public int TotalUpgradeProgress => _saveData?.TotalUpgradeProgress ?? 0;
+        public int GetStatLevel(StatType type) => UpgradeSystem?.GetStatLevel(type) ?? 0;
+        public int TotalUpgradeLevel => UpgradeSystem?.TotalUpgradeLevel ?? 1;
+        public int TotalUpgradeProgress => UpgradeSystem?.TotalUpgradeProgress ?? 0;
         public int TotalUpgradeProgressRequired =>
-            _saveData?.TotalUpgradeProgressRequired ??
+            UpgradeSystem?.TotalUpgradeProgressRequired ??
             GameBalance.StatLevelsPerTotalUpgradeLevel * GameBalance.UpgradeableStatCount;
-        public bool CanIncreaseTotalUpgradeLevel => _saveData?.CanIncreaseTotalUpgradeLevel ?? false;
+        public bool CanIncreaseTotalUpgradeLevel => UpgradeSystem?.CanIncreaseTotalUpgradeLevel ?? false;
 
-        public int GetMaxStatLevel(StatType type) => _saveData?.StatLevelCap ?? GameBalance.StatLevelsPerTotalUpgradeLevel;
+        public int GetMaxStatLevel(StatType type) =>
+            UpgradeSystem?.GetMaxStatLevel(type) ?? GameBalance.StatLevelsPerTotalUpgradeLevel;
 
         public bool TryIncreaseTotalUpgradeLevel()
         {
-            if (_saveData == null || !_saveData.TryIncreaseTotalUpgradeLevel())
+            if (UpgradeSystem == null || !UpgradeSystem.TryIncreaseTotalUpgradeLevel())
                 return false;
 
             Save();
@@ -646,21 +642,17 @@ namespace LostFamiliar.Battle
 
         public bool CanUpgrade(StatType type)
         {
-            return CanUpgrade(type, 1);
+            return UpgradeSystem?.CanUpgrade(type) ?? false;
         }
 
         public bool CanUpgrade(StatType type, int requestedLevels)
         {
-            int count = GetUpgradeLevelCount(type, requestedLevels);
-            return count > 0 && Gold >= GetUpgradeCost(type, count);
+            return UpgradeSystem?.CanUpgrade(type, requestedLevels) ?? false;
         }
 
         public double GetStatValue(StatType type, int additionalLevels = 0)
         {
-            int level = Mathf.Min(
-                GetMaxStatLevel(type),
-                GetStatLevel(type) + Mathf.Max(0, additionalLevels));
-            return GameBalance.StatValue(type, level);
+            return UpgradeSystem?.GetStatValue(type, additionalLevels) ?? 0d;
         }
 
         public void ResetProgress()
@@ -678,6 +670,7 @@ namespace LostFamiliar.Battle
             SaveService.Delete();
             _saveData = new GameSaveData();
             _saveData.Normalize();
+            UpgradeSystem = new UpgradeSystem(_saveData);
             InitializeEquipmentInventory();
             StageNumber = 1;
             StageExperience = 0;
@@ -739,30 +732,17 @@ namespace LostFamiliar.Battle
 
         public double GetUpgradeCost(StatType type)
         {
-            return GameBalance.UpgradeCost(type, GetStatLevel(type));
+            return UpgradeSystem?.GetUpgradeCost(type) ?? 0d;
         }
 
         public double GetUpgradeCost(StatType type, int levelCount)
         {
-            int currentLevel = GetStatLevel(type);
-            int maxLevel = GetMaxStatLevel(type);
-            int count = Mathf.Max(0, Mathf.Min(levelCount, maxLevel - currentLevel));
-            double total = 0d;
-
-            for (int i = 0; i < count; i++)
-            {
-                total += GameBalance.UpgradeCost(type, currentLevel + i);
-                if (double.IsInfinity(total))
-                    return double.MaxValue;
-            }
-
-            return total;
+            return UpgradeSystem?.GetUpgradeCost(type, levelCount) ?? 0d;
         }
 
         public int GetUpgradeLevelCount(StatType type, int requestedLevels)
         {
-            int remaining = Mathf.Max(0, GetMaxStatLevel(type) - GetStatLevel(type));
-            return Mathf.Min(Mathf.Max(0, requestedLevels), remaining);
+            return UpgradeSystem?.GetUpgradeLevelCount(type, requestedLevels) ?? 0;
         }
 
         public void PublishReward(
