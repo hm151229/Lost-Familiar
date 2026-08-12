@@ -6672,6 +6672,7 @@ GameObject:
   m_Component:
   - component: {fileID: 323298373}
   - component: {fileID: 323298374}
+  - component: {fileID: 323298375}
   m_Layer: 0
   m_Name: Player
   m_TagString: Untagged
@@ -6728,11 +6729,24 @@ MonoBehaviour:
   attackScaleAmount: 0.025
   attackMoveAmount: 0.04
   equippedSkills: []
+  skillExecutor: {fileID: 323298375}
   firePoint: {fileID: 0}
   playerHealthBarFill: {fileID: 323748321}
   currentHealth: 0
   damageInvulnerabilityDuration: 0.25
   combatGroup: 0
+--- !u!114 &323298375
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 323298372}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f1656300a8984b518816406fb61a68f0, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!1 &323748319
 GameObject:
   m_ObjectHideFlags: 0
@@ -16347,7 +16361,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 1}
   m_AnchorMax: {x: 0, y: 1}
-  m_AnchoredPosition: {x: 76.94737, y: -140.80971}
+  m_AnchoredPosition: {x: 76.947266, y: -140.80971}
   m_SizeDelta: {x: 153.89474, y: 118.38058}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &752628105
@@ -21522,7 +21536,20 @@ MonoBehaviour:
   m_TargetGraphic: {fileID: 1024939042}
   m_OnClick:
     m_PersistentCalls:
-      m_Calls: []
+      m_Calls:
+      - m_Target: {fileID: 1024939044}
+        m_TargetAssemblyTypeName: LostFamiliar.Battle.BossChallengeButtonPresenter,
+          Assembly-CSharp
+        m_MethodName: OnChallengeClicked
+        m_Mode: 1
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 2
 --- !u!114 &1024939042
 MonoBehaviour:
   m_ObjectHideFlags: 0

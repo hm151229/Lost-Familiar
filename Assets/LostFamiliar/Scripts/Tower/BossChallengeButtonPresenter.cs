@@ -27,23 +27,7 @@ namespace LostFamiliar.Battle
 
         private void EnsureButton()
         {
-            if (buttonRoot != null && challengeButton != null)
-                return;
-
-            foreach (Transform candidate in Resources.FindObjectsOfTypeAll<Transform>())
-            {
-                if (candidate.name != "BossChallengeButton" ||
-                    !candidate.gameObject.scene.IsValid() ||
-                    !candidate.gameObject.scene.isLoaded)
-                    continue;
-
-                buttonRoot = candidate.gameObject;
-                challengeButton = buttonRoot.GetComponent<Button>() ??
-                                  buttonRoot.GetComponentInChildren<Button>(true);
-                break;
-            }
-
-            if (challengeButton == null)
+            if (buttonRoot == null || challengeButton == null)
             {
                 if (!_missingButtonWarningShown)
                 {
@@ -55,8 +39,6 @@ namespace LostFamiliar.Battle
                 return;
             }
 
-            challengeButton.onClick.RemoveListener(OnChallengeClicked);
-            challengeButton.onClick.AddListener(OnChallengeClicked);
             _missingButtonWarningShown = false;
         }
 
@@ -67,7 +49,7 @@ namespace LostFamiliar.Battle
                 buttonRoot.SetActive(_battle != null && _battle.CanChallengeBoss);
         }
 
-        private void OnChallengeClicked()
+        public void OnChallengeClicked()
         {
             if (_battle != null && _battle.TryEnterBossBattle() && buttonRoot != null)
                 buttonRoot.SetActive(false);
@@ -77,8 +59,6 @@ namespace LostFamiliar.Battle
         {
             if (_battle != null)
                 _battle.StateChanged -= Refresh;
-            if (challengeButton != null)
-                challengeButton.onClick.RemoveListener(OnChallengeClicked);
         }
     }
 }

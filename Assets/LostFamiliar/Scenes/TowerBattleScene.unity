@@ -1357,6 +1357,7 @@ GameObject:
   m_Component:
   - component: {fileID: 817762821}
   - component: {fileID: 817762822}
+  - component: {fileID: 817762823}
   m_Layer: 0
   m_Name: Player
   m_TagString: Untagged
@@ -1412,11 +1413,24 @@ MonoBehaviour:
   attackScaleAmount: 0.025
   attackMoveAmount: 0.04
   equippedSkills: []
+  skillExecutor: {fileID: 817762823}
   firePoint: {fileID: 0}
   playerHealthBarFill: {fileID: 0}
   currentHealth: 0
   damageInvulnerabilityDuration: 0.25
   combatGroup: 0
+--- !u!114 &817762823
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 817762820}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f1656300a8984b518816406fb61a68f0, type: 3}
+  m_Name:
+  m_EditorClassIdentifier:
 --- !u!1 &823866271
 GameObject:
   m_ObjectHideFlags: 0
