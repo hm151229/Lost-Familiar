@@ -11,14 +11,16 @@ namespace LostFamiliar.Battle
     public sealed class PlayerSkillExecutor : MonoBehaviour
     {
         private const int SkillEffectSortingOrder = 50;
-        private const int PlayerAreaEffectSortingOrder = 150;
-        private const int StarNovaProjectileSortingOrder = 200;
 
         private PlayerAutoCombat _player;
         private PlayerSkillController _skillController;
         private Transform _firePoint;
         private SpriteRenderer _visualRenderer;
         private Transform _skillEffectRoot;
+        private SkillExecutionContext _context;
+
+        private readonly Dictionary<SkillBehavior, ISkillBehavior>
+            _behaviors = new();
 
         private readonly List<GameObject>
             _playerAttachedSkillEffects = new();
@@ -35,6 +37,56 @@ namespace LostFamiliar.Battle
             _visualRenderer = visualRenderer;
 
             EnsureSkillEffectRoot();
+            BuildExecutionContext();
+            RegisterBehaviors();
+        }
+
+        private void BuildExecutionContext()
+        {
+            _context = new SkillExecutionContext(
+                _player,
+                _firePoint,
+                FindNearestEnemy,
+                GetRandomEnemy,
+                GetDensestEnemyPosition,
+                GetFacingDirection,
+                SegmentIntersectsEnemy,
+                GetProjectileRotation,
+                LaunchProjectile,
+                LaunchDirectProjectile,
+                DealSkillDamage,
+                DamageArea,
+                CreateEffect,
+                CreatePrefabEffect,
+                CreateExplosionEffect,
+                CreateStationaryProjectileEffect,
+                PlayCombatSfx,
+                PlayCombatLoop,
+                StartSkillRoutine,
+                StopAndDestroyProjectile,
+                RegisterPlayerAttachedEffect,
+                UnregisterPlayerAttachedEffect);
+        }
+
+        private void RegisterBehaviors()
+        {
+            // Adding a skill only requires registering its behavior here.
+            _behaviors.Clear();
+            Register(SkillBehavior.MagicMissile, new MagicMissileBehavior());
+            Register(SkillBehavior.FireBall, new FireBallBehavior());
+            Register(SkillBehavior.IceSpear, new IceSpearBehavior());
+            Register(SkillBehavior.LightningBolt, new LightningBoltBehavior());
+            Register(SkillBehavior.ArcaneOrb, new ArcaneOrbBehavior());
+            Register(SkillBehavior.WindCutter, new WindCutterBehavior());
+            Register(SkillBehavior.Meteor, new MeteorBehavior());
+            Register(SkillBehavior.Blizzard, new BlizzardBehavior());
+            Register(SkillBehavior.BlackHole, new BlackHoleBehavior());
+            Register(SkillBehavior.StarNova, new StarNovaBehavior());
+        }
+
+        private void Register(SkillBehavior type, ISkillBehavior behavior)
+        {
+            _behaviors[type] = behavior;
         }
 
         public void Execute(SkillData skill)
@@ -49,118 +101,16 @@ namespace LostFamiliar.Battle
 
         private IEnumerator ExecuteRoutine(SkillData skill)
         {
-            switch (skill.behavior)
+            if (skill == null || _context == null)
+                yield break;
+
+            if (!_behaviors.TryGetValue(skill.behavior, out ISkillBehavior behavior))
             {
-                case SkillBehavior.MagicMissile: yield return CastMagicMissile(skill); break;
-                case SkillBehavior.FireBall: yield return CastFireBall(skill); break;
-                case SkillBehavior.IceSpear: yield return CastIceSpear(skill); break;
-                case SkillBehavior.LightningBolt: yield return CastLightningBolt(skill); break;
-                case SkillBehavior.ArcaneOrb: yield return CastArcaneOrb(skill); break;
-                case SkillBehavior.WindCutter: yield return CastWindCutter(skill); break;
-                case SkillBehavior.Meteor: yield return CastMeteor(skill); break;
-                case SkillBehavior.Blizzard: yield return CastBlizzard(skill); break;
-                case SkillBehavior.BlackHole: yield return CastBlackHole(skill); break;
-                case SkillBehavior.StarNova: yield return CastStarNova(skill); break;
-            }
-        }
-
-        private IEnumerator CastMagicMissile(SkillData skill)
-        {
-            for (int i = 0; i < Mathf.Max(1, skill.projectileCount); i++)
-            {
-                EnemyActor target = FindNearestEnemy(float.MaxValue);
-                if (target == null) yield break;
-                yield return LaunchProjectile(
-                    skill, target, skill.damageMultiplier, 0f, skill.projectileTravelDuration);
-                yield return new WaitForSeconds(.08f);
-            }
-        }
-
-        private IEnumerator CastFireBall(SkillData skill)
-        {
-            EnemyActor target = FindNearestEnemy(float.MaxValue);
-            if (target != null)
-                yield return LaunchProjectile(
-                    skill, target, skill.damageMultiplier, skill.radius, skill.projectileTravelDuration);
-        }
-
-        private IEnumerator CastIceSpear(SkillData skill)
-        {
-            PlayCombatSfx("SFX_IceSpear_Cast");
-            Vector3 origin = _firePoint != null ? _firePoint.position : transform.position;
-            Vector3 forward = GetFacingDirection();
-            const float halfArc = 38f;
-            int count = Mathf.Max(1, skill.projectileCount);
-            float distance = Mathf.Max(6f, skill.radius);
-            float travelDuration = Mathf.Max(.05f, skill.projectileTravelDuration);
-            HashSet<EnemyActor> hit = new HashSet<EnemyActor>();
-            List<GameObject> projectiles = new List<GameObject>(count);
-            List<Vector3> directions = new List<Vector3>(count);
-            List<Vector3> spawnPositions = new List<Vector3>(count);
-            List<Vector3> previousPositions = new List<Vector3>(count);
-
-            for (int i = 0; i < count; i++)
-            {
-                float angle = count <= 1
-                    ? 0f
-                    : Mathf.Lerp(-halfArc, halfArc, i / (float)(count - 1));
-                Vector3 direction = Quaternion.Euler(0f, 0f, angle) * forward;
-                Vector3 spawnPosition = origin + skill.projectileSpawnOffset;
-                GameObject projectile;
-                if (skill.projectileEffectPrefab != null)
-                {
-                    Quaternion rotation = GetProjectileRotation(
-                        spawnPosition, spawnPosition + direction, skill.projectileRotationOffset);
-                    projectile = Instantiate(skill.projectileEffectPrefab, spawnPosition, rotation);
-                    RegisterSkillEffect(projectile);
-                    ApplySkillEffectSorting(projectile);
-                }
-                else
-                {
-                    projectile = CreateEffect(
-                        spawnPosition, Vector3.one * .3f, skill.effectColor, travelDuration + .1f);
-                }
-
-                projectiles.Add(projectile);
-                directions.Add(direction.normalized);
-                spawnPositions.Add(spawnPosition);
-                previousPositions.Add(spawnPosition);
+                Debug.LogWarning($"등록되지 않은 SkillBehavior: {skill.behavior}", this);
+                yield break;
             }
 
-            float elapsed = 0f;
-            while (elapsed < travelDuration)
-            {
-                elapsed += Time.deltaTime;
-                float progress = Mathf.Clamp01(elapsed / travelDuration);
-                for (int i = 0; i < projectiles.Count; i++)
-                {
-                    GameObject projectile = projectiles[i];
-                    if (projectile == null)
-                        continue;
-
-                    Vector3 previous = previousPositions[i];
-                    Vector3 current = Vector3.Lerp(
-                        spawnPositions[i], spawnPositions[i] + directions[i] * distance, progress);
-                    projectile.transform.position = current;
-                    previousPositions[i] = current;
-
-                    foreach (EnemyActor enemy in EnemyActor.Active.ToArray())
-                    {
-                        if (enemy == null || enemy.CombatGroup != _player.CombatGroup || hit.Contains(enemy))
-                            continue;
-                        if (!SegmentIntersectsEnemy(
-                                previous, current, enemy, skill.projectileImpactDistance))
-                            continue;
-
-                        hit.Add(enemy);
-                        DealSkillDamage(skill, enemy, skill.damageMultiplier);
-                    }
-                }
-                yield return null;
-            }
-
-            foreach (GameObject projectile in projectiles)
-                if (projectile != null) StopAndDestroyProjectile(projectile);
+            yield return behavior.Execute(skill, _context);
         }
 
         private static bool SegmentIntersectsEnemy(
@@ -193,441 +143,6 @@ namespace LostFamiliar.Battle
             enter = Mathf.Max(enter, first);
             exit = Mathf.Min(exit, second);
             return enter <= exit;
-        }
-
-        private IEnumerator CastLightningBolt(SkillData skill)
-        {
-            EnemyActor target = GetRandomEnemy();
-            if (target == null)
-                yield break;
-
-            Vector3 point = target.AimPosition;
-            float effectLifetime;
-            if (skill.projectileEffectPrefab != null)
-            {
-                CreateStationaryProjectileEffect(
-                    skill.projectileEffectPrefab,
-                    point + skill.projectileSpawnOffset,
-                    skill.projectileRotationOffset,
-                    out effectLifetime);
-            }
-            else
-            {
-                effectLifetime = .18f;
-                CreateEffect(
-                    point + Vector3.up * 1.5f,
-                    new Vector3(.25f, 3f, .25f),
-                    skill.effectColor,
-                    effectLifetime);
-            }
-
-            PlayCombatLoop("SFX_LightningBolt_Cast", effectLifetime);
-
-            float requestedInterval = Mathf.Max(.05f, skill.tickInterval);
-            int tickCount = Mathf.Max(1, Mathf.CeilToInt(effectLifetime / requestedInterval));
-            float actualInterval = effectLifetime / tickCount;
-            float damagePerTick = skill.damageMultiplier / tickCount;
-            for (int tick = 0; tick < tickCount; tick++)
-            {
-                DamageArea(skill, point, skill.radius, damagePerTick);
-                if (tick + 1 < tickCount)
-                    yield return new WaitForSeconds(actualInterval);
-            }
-        }
-
-        private IEnumerator CastArcaneOrb(SkillData skill)
-        {
-            PlayCombatLoop("SFX_ArcaneOrb_Loop", skill.duration);
-            bool usesPrefab = skill.playerAreaEffectPrefab != null;
-            float effectLifetime = skill.playerAreaEffectLifetime > 0f
-                ? skill.playerAreaEffectLifetime
-                : skill.duration + .25f;
-            GameObject orb = usesPrefab
-                ? CreatePrefabEffect(
-                    skill.playerAreaEffectPrefab,
-                    transform.position + skill.playerAreaEffectOffset,
-                    Quaternion.identity,
-                    effectLifetime)
-                : CreateEffect(transform.position, Vector3.one * .45f, skill.effectColor, skill.duration + .25f);
-            if (usesPrefab)
-                ApplySkillEffectSorting(orb, PlayerAreaEffectSortingOrder);
-            float elapsed = 0f;
-            float interval = Mathf.Max(.05f, skill.tickInterval);
-            while (elapsed < skill.duration)
-            {
-                if (orb != null)
-                {
-                    if (usesPrefab)
-                    {
-                        orb.transform.position = transform.position + skill.playerAreaEffectOffset;
-                    }
-                    else
-                    {
-                        float angle = elapsed * 240f * Mathf.Deg2Rad;
-                        orb.transform.position = transform.position +
-                                                 new Vector3(Mathf.Cos(angle), Mathf.Sin(angle), 0f) * 1.2f;
-                    }
-                }
-                EnemyActor target = FindNearestEnemy(transform.position, Mathf.Max(1f, skill.radius));
-                if (target != null)
-                {
-                    Vector3 shotOrigin = orb != null
-                        ? orb.transform.position
-                        : transform.position + skill.playerAreaEffectOffset;
-                    StartCoroutine(LaunchDirectProjectile(
-                        skill, target, shotOrigin, skill.damageMultiplier));
-                }
-                yield return new WaitForSeconds(interval);
-                elapsed += interval;
-            }
-        }
-
-        private IEnumerator CastWindCutter(SkillData skill)
-        {
-            PlayCombatSfx("SFX_WindCutter_Fly");
-            int count = Mathf.Max(1, skill.projectileCount);
-            float halfDistance = Mathf.Max(6f, skill.radius);
-            float travelDuration = Mathf.Max(.05f, skill.projectileTravelDuration);
-            Vector3 center = GetDensestEnemyPosition(skill.radius);
-            const float laneSpacing = 1.1f;
-            List<GameObject> projectiles = new List<GameObject>(count);
-            List<Vector3> startPositions = new List<Vector3>(count);
-            List<Vector3> endPositions = new List<Vector3>(count);
-            List<Vector3> previousPositions = new List<Vector3>(count);
-            List<HashSet<EnemyActor>> hitByProjectile = new List<HashSet<EnemyActor>>(count);
-
-            for (int i = 0; i < count; i++)
-            {
-                float laneOffset = (i - (count - 1) * .5f) * laneSpacing;
-                Vector3 start = center + new Vector3(-halfDistance, laneOffset, 0f) + skill.projectileSpawnOffset;
-                Vector3 end = center + new Vector3(halfDistance, laneOffset, 0f) + skill.projectileSpawnOffset;
-                GameObject projectile;
-                if (skill.projectileEffectPrefab != null)
-                {
-                    Quaternion rotation = GetProjectileRotation(start, end, skill.projectileRotationOffset);
-                    projectile = Instantiate(skill.projectileEffectPrefab, start, rotation);
-                    RegisterSkillEffect(projectile);
-                    ApplySkillEffectSorting(projectile);
-                }
-                else
-                {
-                    projectile = CreateEffect(
-                        start, Vector3.one * .3f, skill.effectColor, travelDuration + .1f);
-                }
-
-                projectiles.Add(projectile);
-                startPositions.Add(start);
-                endPositions.Add(end);
-                previousPositions.Add(start);
-                hitByProjectile.Add(new HashSet<EnemyActor>());
-            }
-
-            float elapsed = 0f;
-            while (elapsed < travelDuration)
-            {
-                elapsed += Time.deltaTime;
-                float progress = Mathf.Clamp01(elapsed / travelDuration);
-                for (int i = 0; i < projectiles.Count; i++)
-                {
-                    GameObject projectile = projectiles[i];
-                    if (projectile == null)
-                        continue;
-
-                    Vector3 previous = previousPositions[i];
-                    Vector3 current = Vector3.Lerp(startPositions[i], endPositions[i], progress);
-                    projectile.transform.position = current;
-                    previousPositions[i] = current;
-
-                    foreach (EnemyActor enemy in EnemyActor.Active.ToArray())
-                    {
-                        if (enemy == null || enemy.CombatGroup != _player.CombatGroup ||
-                            hitByProjectile[i].Contains(enemy))
-                            continue;
-                        if (!SegmentIntersectsEnemy(
-                                previous, current, enemy, skill.projectileImpactDistance))
-                            continue;
-
-                        hitByProjectile[i].Add(enemy);
-                        DealSkillDamage(skill, enemy, skill.damageMultiplier);
-                    }
-                }
-                yield return null;
-            }
-
-            foreach (GameObject projectile in projectiles)
-                if (projectile != null) StopAndDestroyProjectile(projectile);
-        }
-
-        private IEnumerator CastMeteor(SkillData skill)
-        {
-            Vector3 center = GetDensestEnemyPosition(skill.radius);
-            for (int i = 0; i < Mathf.Max(1, skill.projectileCount); i++)
-            {
-                Vector2 randomOffset = Random.insideUnitCircle * skill.radius * .55f;
-                Vector3 impact = center + new Vector3(randomOffset.x, randomOffset.y, 0f);
-                float impactDelay = .35f;
-                GameObject meteor;
-                if (skill.projectileEffectPrefab != null)
-                {
-                    meteor = CreateStationaryProjectileEffect(
-                        skill.projectileEffectPrefab,
-                        impact + skill.projectileSpawnOffset,
-                        skill.projectileRotationOffset,
-                        out _);
-                    impactDelay = GetMeteorImpactDelay(meteor);
-                }
-                else
-                {
-                    meteor = CreateEffect(
-                        impact, Vector3.one * skill.radius, skill.effectColor, impactDelay);
-                }
-
-                StartCoroutine(ResolveMeteorImpact(skill, impact, impactDelay, meteor));
-                yield return new WaitForSeconds(.18f);
-            }
-        }
-
-        private IEnumerator ResolveMeteorImpact(
-            SkillData skill, Vector3 impact, float delay, GameObject meteor)
-        {
-            yield return new WaitForSeconds(Mathf.Max(0f, delay));
-            PlayCombatSfx("SFX_Meteor_Impact");
-            if (meteor != null)
-                StopAndDestroyProjectile(meteor);
-            if (skill.explosionEffectPrefab != null)
-                CreateExplosionEffect(skill, impact);
-            DamageArea(skill, impact, skill.radius, skill.damageMultiplier, null, false);
-        }
-
-        private static float GetMeteorImpactDelay(GameObject meteor)
-        {
-            if (meteor == null)
-                return .35f;
-
-            Transform hitController = FindChildByName(meteor.transform, "hit_controller");
-            ParticleSystem particles = hitController != null
-                ? hitController.GetComponent<ParticleSystem>()
-                : null;
-            return particles != null
-                ? Mathf.Max(.01f, particles.main.startDelay.constantMax)
-                : .8f;
-        }
-
-        private static Transform FindChildByName(
-            Transform root,
-            string childName)
-        {
-            if (root == null ||
-                string.IsNullOrEmpty(childName))
-                return null;
-
-            for (int i = 0;
-                 i < root.childCount;
-                 i++)
-            {
-                Transform child = root.GetChild(i);
-                if (child.name == childName)
-                    return child;
-
-                Transform nested =
-                    FindChildByName(child, childName);
-                if (nested != null)
-                    return nested;
-            }
-
-            return null;
-        }
-
-        private IEnumerator CastBlizzard(SkillData skill)
-        {
-            PlayCombatLoop("SFX_Blizzard_Loop", skill.duration);
-            Vector3 center = GetDensestEnemyPosition(skill.radius);
-            if (skill.worldAreaEffectPrefab != null)
-            {
-                float effectLifetime = skill.worldAreaEffectLifetime > 0f
-                    ? skill.worldAreaEffectLifetime
-                    : skill.duration;
-                CreatePrefabEffect(
-                    skill.worldAreaEffectPrefab,
-                    center + skill.worldAreaEffectOffset,
-                    Quaternion.Euler(skill.worldAreaEffectRotation),
-                    effectLifetime);
-            }
-            else
-            {
-                CreateEffect(center, Vector3.one * skill.radius * 1.6f, skill.effectColor, skill.duration);
-            }
-            float interval = Mathf.Max(.05f, skill.tickInterval);
-            for (float elapsed = 0f; elapsed < skill.duration; elapsed += interval)
-            {
-                foreach (EnemyActor enemy in EnemyActor.Active.ToArray())
-                {
-                    if (enemy == null || enemy.CombatGroup != _player.CombatGroup || Vector3.Distance(center, enemy.transform.position) > skill.radius) continue;
-                    DealSkillDamage(skill, enemy, skill.damageMultiplier);
-                    enemy.ApplySlow(skill.slowPercent, interval + .1f);
-                }
-                yield return new WaitForSeconds(interval);
-            }
-        }
-
-        private IEnumerator CastBlackHole(SkillData skill)
-        {
-            PlayCombatLoop("SFX_BlackHole_Loop", skill.duration);
-            Vector3 center = GetDensestEnemyPosition(skill.radius);
-            if (skill.worldAreaEffectPrefab != null)
-            {
-                float effectLifetime = skill.worldAreaEffectLifetime > 0f
-                    ? skill.worldAreaEffectLifetime
-                    : skill.duration + .25f;
-                CreatePrefabEffect(
-                    skill.worldAreaEffectPrefab,
-                    center + skill.worldAreaEffectOffset,
-                    Quaternion.Euler(skill.worldAreaEffectRotation),
-                    effectLifetime);
-            }
-            else
-            {
-                CreateEffect(center, Vector3.one * skill.radius * 1.4f, skill.effectColor, skill.duration + .25f);
-            }
-            float interval = Mathf.Max(.05f, skill.tickInterval);
-            int tickCount = Mathf.Max(1, Mathf.CeilToInt(skill.duration / interval));
-            float damagePerTick = skill.damageMultiplier / tickCount;
-            float elapsed = 0f;
-            float damageTimer = 0f;
-            int appliedTicks = 0;
-            while (elapsed < skill.duration)
-            {
-                yield return null;
-
-                float deltaTime = Mathf.Min(Time.deltaTime, skill.duration - elapsed);
-                elapsed += deltaTime;
-                damageTimer += deltaTime;
-
-                int damageTicksThisFrame = 0;
-                while (damageTimer + .0001f >= interval && appliedTicks < tickCount)
-                {
-                    damageTimer -= interval;
-                    appliedTicks++;
-                    damageTicksThisFrame++;
-                }
-
-                foreach (EnemyActor enemy in EnemyActor.Active.ToArray())
-                {
-                    if (enemy == null || enemy.CombatGroup != _player.CombatGroup || Vector3.Distance(center, enemy.transform.position) > skill.radius) continue;
-
-                    float distanceToCenter = Vector3.Distance(enemy.transform.position, center);
-                    float pullEase = 1f - Mathf.Exp(-Mathf.Max(.01f, skill.pullStrength) * .45f * deltaTime);
-                    enemy.PullTowards(center, distanceToCenter * pullEase, deltaTime + .05f);
-
-                    Vector3 closestPoint = enemy.VisualBounds.ClosestPoint(center);
-                    bool touchesDamageCore = Vector3.Distance(center, closestPoint) <= skill.blackHoleDamageRadius;
-                    if (!touchesDamageCore)
-                        continue;
-
-                    for (int tick = 0; tick < damageTicksThisFrame; tick++)
-                        DealSkillDamage(skill, enemy, damagePerTick, null, true, false);
-                }
-            }
-            DamageArea(skill, center, skill.radius, skill.secondaryDamageMultiplier, null, true, false);
-        }
-
-        private IEnumerator CastStarNova(SkillData skill)
-        {
-            const float chargeDuration = 1.5f;
-            GameObject playerAreaEffect = null;
-            if (skill.playerAreaEffectPrefab != null)
-            {
-                float fullSkillLifetime = chargeDuration +
-                                          Mathf.Max(.05f, skill.explosionEffectLifetime) +
-                                          Mathf.Max(.05f, skill.projectileTravelDuration) + .25f;
-                float effectLifetime = Mathf.Max(skill.playerAreaEffectLifetime, fullSkillLifetime);
-                playerAreaEffect = CreatePrefabEffect(
-                    skill.playerAreaEffectPrefab,
-                    transform.position + skill.playerAreaEffectOffset,
-                    Quaternion.identity,
-                    effectLifetime);
-                playerAreaEffect.transform.SetParent(transform, false);
-                playerAreaEffect.transform.localPosition = skill.playerAreaEffectOffset;
-                playerAreaEffect.transform.localRotation = Quaternion.identity;
-                _playerAttachedSkillEffects.Add(playerAreaEffect);
-                ApplySkillEffectSorting(playerAreaEffect, PlayerAreaEffectSortingOrder);
-            }
-
-            yield return new WaitForSeconds(chargeDuration);
-            PlayCombatSfx("SFX_StarNova_Explosion");
-
-            GameObject explosionEffect;
-            if (skill.explosionEffectPrefab != null)
-            {
-                explosionEffect = CreateExplosionEffect(skill, transform.position);
-            }
-            else
-            {
-                explosionEffect = CreateEffect(
-                    transform.position,
-                    Vector3.one * skill.radius * 1.8f,
-                    skill.effectColor,
-                    skill.explosionEffectLifetime);
-            }
-
-            yield return new WaitForSeconds(Mathf.Max(.05f, skill.explosionEffectLifetime));
-            if (explosionEffect != null)
-                StopAndDestroyProjectile(explosionEffect);
-
-            PlayCombatSfx("SFX_StarNova_Fragment_Fly");
-
-            List<EnemyActor> fallbackTargets = new List<EnemyActor>();
-            foreach (EnemyActor enemy in EnemyActor.Active.ToArray())
-            {
-                if (enemy != null && enemy.Health > 0f && enemy.CombatGroup == _player.CombatGroup)
-                    fallbackTargets.Add(enemy);
-            }
-
-            DamageArea(skill, transform.position, skill.radius, skill.damageMultiplier);
-
-            List<EnemyActor> targets = new List<EnemyActor>();
-            foreach (EnemyActor enemy in EnemyActor.Active.ToArray())
-            {
-                if (enemy != null && enemy.Health > 0f && enemy.CombatGroup == _player.CombatGroup)
-                    targets.Add(enemy);
-            }
-
-            targets.Sort((left, right) =>
-                Vector3.SqrMagnitude(left.transform.position - transform.position).CompareTo(
-                    Vector3.SqrMagnitude(right.transform.position - transform.position)));
-
-            if (targets.Count == 0)
-                targets.AddRange(fallbackTargets);
-
-            if (targets.Count == 0)
-            {
-                if (playerAreaEffect != null)
-                {
-                    StopAndDestroyProjectile(playerAreaEffect);
-                    _playerAttachedSkillEffects.Remove(playerAreaEffect);
-                }
-                yield break;
-            }
-
-            int count = Mathf.Max(1, skill.projectileCount);
-            Vector3 projectileOrigin = transform.position;
-            for (int i = 0; i < count; i++)
-            {
-                EnemyActor target = targets[i % targets.Count];
-                StartCoroutine(LaunchDirectProjectile(
-                    skill,
-                    target,
-                    projectileOrigin,
-                    skill.secondaryDamageMultiplier,
-                    StarNovaProjectileSortingOrder));
-            }
-
-            yield return new WaitForSeconds(Mathf.Max(.05f, skill.projectileTravelDuration));
-            if (playerAreaEffect != null)
-            {
-                StopAndDestroyProjectile(playerAreaEffect);
-                _playerAttachedSkillEffects.Remove(playerAreaEffect);
-            }
         }
 
         private IEnumerator LaunchProjectile(
@@ -872,12 +387,16 @@ namespace LostFamiliar.Battle
         }
 
         private GameObject CreatePrefabEffect(
-            GameObject prefab, Vector3 position, Quaternion rotation, float lifetime)
+            GameObject prefab,
+            Vector3 position,
+            Quaternion rotation,
+            float lifetime,
+            int sortingOrder)
         {
             if (prefab == null) return null;
             GameObject effect = Instantiate(prefab, position, rotation);
             RegisterSkillEffect(effect);
-            ApplySkillEffectSorting(effect);
+            ApplySkillEffectSorting(effect, sortingOrder);
             Destroy(effect, Mathf.Max(.05f, lifetime));
             return effect;
         }
@@ -971,6 +490,23 @@ namespace LostFamiliar.Battle
                 effect.SetActive(false);
                 Destroy(effect);
             }
+        }
+
+        private void StartSkillRoutine(IEnumerator routine)
+        {
+            if (routine != null)
+                StartCoroutine(routine);
+        }
+
+        private void RegisterPlayerAttachedEffect(GameObject effect)
+        {
+            if (effect != null && !_playerAttachedSkillEffects.Contains(effect))
+                _playerAttachedSkillEffects.Add(effect);
+        }
+
+        private void UnregisterPlayerAttachedEffect(GameObject effect)
+        {
+            _playerAttachedSkillEffects.Remove(effect);
         }
 
         private void EnsureSkillEffectRoot()
