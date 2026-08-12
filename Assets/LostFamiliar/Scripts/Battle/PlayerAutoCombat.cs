@@ -77,12 +77,13 @@ namespace LostFamiliar.Battle
         public bool LastAttackWasCritical { get; private set; }
         public bool IsAlive => Health > 0f;
         public int CombatGroup => combatGroup;
-        public SkillData[] EquippedSkills => equippedSkills;
+        public SkillData[] EquippedSkills =>
+            _skillController?.EquippedSkills ??
+            System.Array.Empty<SkillData>();
         public float SeparationFootprintRadius => _separationFootprintRadius;
 
         private float _attackTimer;
-        private float[] _skillTimers;
-        private int[] _equippedSkillLevels = System.Array.Empty<int>();
+        private PlayerSkillController _skillController;
         private Vector3 _initialPosition;
         private SpriteRenderer _visualRenderer;
         private Animator _visualAnimator;
@@ -132,6 +133,7 @@ namespace LostFamiliar.Battle
 
         private void Awake()
         {
+            _skillController = new PlayerSkillController();
             MaxHealth = baseMaxHealth;
             AttackDamage = baseAttackDamage;
             AttacksPerSecond = baseAttacksPerSecond;
@@ -152,7 +154,7 @@ namespace LostFamiliar.Battle
             }
             ApplyPlayerSortingOrder();
             CacheSeparationFootprint();
-            RebuildSkillTimers();
+            _skillController.SetEquippedSkills(equippedSkills);
             UpdateHealthBar();
             PlayIdleAnimation(true);
         }
@@ -450,28 +452,13 @@ namespace LostFamiliar.Battle
 
         private void UpdateSkills()
         {
-            if (equippedSkills == null)
-                return;
-
-            if (_skillTimers == null || _skillTimers.Length != equippedSkills.Length)
-                RebuildSkillTimers();
-
-            for (int i = 0; i < equippedSkills.Length; i++)
-            {
-                SkillData skill = equippedSkills[i];
-                if (skill == null)
-                    continue;
-
-                _skillTimers[i] += Time.deltaTime;
-                if (_skillTimers[i] < skill.cooldown || !CanUse(skill))
-                    continue;
-
-                _skillTimers[i] = 0f;
-                UseSkill(skill);
-            }
+            _skillController?.Update(
+                Time.deltaTime,
+                CanUseSkill,
+                UseSkill);
         }
 
-        private bool CanUse(SkillData skill)
+        private bool CanUseSkill(SkillData skill)
         {
             if (skill.targetType == SkillTargetType.Self) return true;
             foreach (EnemyActor enemy in EnemyActor.Active)
@@ -1269,17 +1256,7 @@ namespace LostFamiliar.Battle
 
         private int GetEquippedSkillLevel(SkillData skill)
         {
-            if (skill == null || equippedSkills == null)
-                return 1;
-
-            for (int i = 0; i < equippedSkills.Length; i++)
-            {
-                SkillData equipped = equippedSkills[i];
-                if (equipped != skill && (equipped == null || equipped.id != skill.id))
-                    continue;
-                return i < _equippedSkillLevels.Length ? Mathf.Max(1, _equippedSkillLevels[i]) : 1;
-            }
-            return 1;
+            return _skillController?.GetLevel(skill) ?? 1;
         }
 
         private float ApplyBossDamage(float damage, EnemyActor enemy)
@@ -1596,10 +1573,9 @@ namespace LostFamiliar.Battle
         public void SetEquippedSkills(SkillData[] skills, int[] levels = null)
         {
             equippedSkills = skills ?? System.Array.Empty<SkillData>();
-            _equippedSkillLevels = new int[equippedSkills.Length];
-            for (int i = 0; i < _equippedSkillLevels.Length; i++)
-                _equippedSkillLevels[i] = levels != null && i < levels.Length ? Mathf.Max(1, levels[i]) : 1;
-            RebuildSkillTimers();
+            _skillController?.SetEquippedSkills(
+                equippedSkills,
+                levels);
         }
 
         public double EstimateOfflineKillsPerSecond(double averageEnemyHealth, double spawnLimitPerSecond)
@@ -1613,27 +1589,38 @@ namespace LostFamiliar.Battle
             double totalDamagePerSecond = expectedBasicHit * AttacksPerSecond;
             double damagingHitsPerSecond = AttacksPerSecond;
 
-            if (equippedSkills != null)
+            int skillCount =
+                _skillController?.Count ?? 0;
+
+            for (int i = 0;
+                 i < skillCount;
+                 i++)
             {
-                for (int i = 0; i < equippedSkills.Length; i++)
-                {
-                    SkillData skill = equippedSkills[i];
-                    if (skill == null || skill.cooldown <= 0f)
-                        continue;
+                SkillData skill =
+                    _skillController.GetSkill(i);
 
-                    GetOfflineSkillHitProfile(skill, out double hitsPerCast, out double damageMultiplierPerCast);
-                    if (hitsPerCast <= 0d || damageMultiplierPerCast <= 0d)
-                        continue;
+                if (skill == null ||
+                    skill.cooldown <= 0f)
+                    continue;
 
-                    int level = i < _equippedSkillLevels.Length
-                        ? Mathf.Max(1, _equippedSkillLevels[i])
-                        : 1;
-                    double levelMultiplier = SkillBalance.EquippedEffectMultiplier(level);
-                    double cooldown = System.Math.Max(.1d, skill.cooldown);
-                    totalDamagePerSecond += AttackDamage * SkillDamageMultiplier * levelMultiplier *
-                                            damageMultiplierPerCast / cooldown;
-                    damagingHitsPerSecond += hitsPerCast / cooldown;
-                }
+                GetOfflineSkillHitProfile(
+                    skill,
+                    out double hitsPerCast,
+                    out double damageMultiplierPerCast);
+
+                if (hitsPerCast <= 0d ||
+                    damageMultiplierPerCast <= 0d)
+                    continue;
+
+                int level =
+                    _skillController.GetLevel(i);
+                double levelMultiplier =
+                    SkillBalance.EquippedEffectMultiplier(level);
+                double cooldown =
+                    System.Math.Max(.1d, skill.cooldown);
+                totalDamagePerSecond += AttackDamage * SkillDamageMultiplier * levelMultiplier *
+                                        damageMultiplierPerCast / cooldown;
+                damagingHitsPerSecond += hitsPerCast / cooldown;
             }
 
             // Damage/HP estimates throughput, while the hit-rate cap prevents a very large
@@ -1684,21 +1671,7 @@ namespace LostFamiliar.Battle
 
         public float GetSkillCooldown01(int index)
         {
-            if (_skillTimers == null || index < 0 || index >= _skillTimers.Length)
-                return 0f;
-
-            SkillData skill = equippedSkills[index];
-            return skill == null ? 0f : Mathf.Clamp01(_skillTimers[index] / skill.cooldown);
-        }
-
-        private void RebuildSkillTimers()
-        {
-            _skillTimers = new float[equippedSkills?.Length ?? 0];
-            for (int i = 0; i < _skillTimers.Length; i++)
-            {
-                SkillData skill = equippedSkills[i];
-                _skillTimers[i] = skill != null ? skill.cooldown : 0f;
-            }
+            return _skillController?.GetCooldown01(index) ?? 0f;
         }
     }
 }

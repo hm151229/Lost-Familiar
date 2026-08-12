@@ -461,7 +461,9 @@ namespace LostFamiliar.Battle
                 return safeAreaCanvas;
             }
 
-            Canvas[] canvases = UnityEngine.Object.FindObjectsOfType<Canvas>(true);
+            Canvas[] canvases = UnityEngine.Object.FindObjectsByType<Canvas>(
+                FindObjectsInactive.Include,
+                FindObjectsSortMode.None);
             foreach (Canvas candidate in canvases)
             {
                 if (candidate != null &&
