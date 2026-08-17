@@ -4,7 +4,6 @@ using System.Collections.Generic;
 using LostFamiliar.Core;
 using TMPro;
 using UnityEngine;
-using UnityEngine.Events;
 using UnityEngine.EventSystems;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
@@ -15,16 +14,57 @@ namespace LostFamiliar.Battle
     {
         private const int TowerCombatGroup = 1;
         private const int TowerWorldLayer = 30;
+
+        [Header("Tower World")]
+        [SerializeField] private PlayerAutoCombat player;
+        [SerializeField] private GameObject worldRoot;
+        [SerializeField] private Camera towerCamera;
+        [SerializeField] private CameraFollow2D cameraFollow;
+        [SerializeField] private AudioListener towerAudioListener;
+        [SerializeField] private GameObject background;
+        [SerializeField] private BackgroundTiler2D backgroundTiler;
+        [SerializeField] private Transform enemyBase;
+
+        [Header("Battle UI")]
+        [SerializeField] private TMP_Text towerNameText;
+        [SerializeField] private TMP_Text timeText;
+        [SerializeField] private Image bossHpFill;
+        [SerializeField] private SkillBarController skillBar;
+
+        [Header("Popup")]
+        [SerializeField] private GameObject popupPanel;
+        [SerializeField] private GameObject pausePopup;
+        [SerializeField] private GameObject resultPopup;
+
+        [Header("Pause Buttons")]
+        [SerializeField] private Button exitButton;
+        [SerializeField] private Button exitConfirmButton;
+        [SerializeField] private Button exitCancelButton;
+
+        [Header("Result")]
+        [SerializeField] private Button resultConfirmButton;
+        [SerializeField] private Button retryButton;
+        [SerializeField] private Button nextButton;
+
+        [Header("Result Reward")]
+        [SerializeField] private Image resultRewardIcon;
+        [SerializeField] private TMP_Text resultRewardAmountText;
+
+        [Header("Result Tickets")]
+        [SerializeField] private Sprite goldTicketIcon;
+        [SerializeField] private Sprite gemTicketIcon;
+        [SerializeField] private Image retryTicketIcon;
+        [SerializeField] private TMP_Text retryTicketCountText;
+        [SerializeField] private Image nextTicketIcon;
+        [SerializeField] private TMP_Text nextTicketCountText;
+
+        [Header("Result Reward Icons")]
+        [SerializeField] private Sprite goldRewardIcon;
+        [SerializeField] private Sprite gemRewardIcon;
+
         private MainBattleLoop _main;
-        private PlayerAutoCombat _player;
         private TowerRunSetup _setup;
-        private TMP_Text _towerNameText;
-        private TMP_Text _timeText;
         private Color _defaultTimeTextColor = Color.white;
-        private Image _bossHpFill;
-        private GameObject _pausePopup;
-        private GameObject _resultPopup;
-        private GameObject _popupPanel;
         private EnemyActor _currentBoss;
         private readonly List<EnemyActor> _enemies = new();
         private readonly List<EnemyActor> _dyingEnemies = new();
@@ -38,30 +78,6 @@ namespace LostFamiliar.Battle
         private bool _completionPending;
         private double _totalStageHealth;
 
-        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
-        private static void Install()
-        {
-            SceneManager.sceneLoaded -= OnSceneLoaded;
-            SceneManager.sceneLoaded += OnSceneLoaded;
-            for (int i = 0; i < SceneManager.sceneCount; i++)
-                TryInstall(SceneManager.GetSceneAt(i));
-        }
-
-        private static void OnSceneLoaded(Scene scene, LoadSceneMode mode) => TryInstall(scene);
-
-        private static void TryInstall(Scene scene)
-        {
-            if (!scene.IsValid() || !scene.isLoaded || scene.name != "TowerBattleScene") return;
-            foreach (GameObject root in scene.GetRootGameObjects())
-            {
-                TowerBattleController existing = root.GetComponentInChildren<TowerBattleController>(true);
-                if (existing != null) return;
-            }
-            GameObject host = new GameObject("TowerBattleController");
-            SceneManager.MoveGameObjectToScene(host, scene);
-            host.AddComponent<TowerBattleController>();
-        }
-
         private void Start()
         {
             _main = FindFirstObjectByType<MainBattleLoop>();
@@ -71,63 +87,45 @@ namespace LostFamiliar.Battle
                 return;
             }
 
-            _player = FindInScene<PlayerAutoCombat>();
-            _towerNameText = FindComponent<TMP_Text>("TowerNameText");
-            _timeText = FindComponent<TMP_Text>("TimeText");
-            if (_timeText != null) _defaultTimeTextColor = _timeText.color;
-            _bossHpFill = FindComponent<Image>("Fill", "HpBar");
-            _pausePopup = FindObject("PausePopup");
-            _resultPopup = FindObject("ResultPopup");
-            _popupPanel = FindObject("Panel", "PopupRoot");
-            HideOtherScenePresentation();
-            AudioListener towerListener = FindInScene<AudioListener>();
-            if (towerListener != null) towerListener.enabled = true;
-            if (_pausePopup != null) _pausePopup.SetActive(false);
-            if (_resultPopup != null) _resultPopup.SetActive(false);
-            if (_popupPanel != null) _popupPanel.SetActive(false);
-
-            if (_player == null)
+            if (player == null)
             {
-                Debug.LogError("TowerBattleScene에서 PlayerAutoCombat을 찾지 못했습니다.", this);
+                Debug.LogError("TowerBattleController에 PlayerAutoCombat이 연결되지 않았습니다.", this);
                 _main.CancelTowerRun();
                 return;
             }
 
-            _player.gameObject.SetActive(true);
-            _player.enabled = true;
-            _player.SetCombatGroup(TowerCombatGroup);
-            _main.ConfigureTowerPlayer(_player);
+            if (timeText != null)
+                _defaultTimeTextColor = timeText.color;
+
+            HideOtherScenePresentation();
+
+            if (towerAudioListener != null)
+                towerAudioListener.enabled = true;
+
+            if (pausePopup != null)
+                pausePopup.SetActive(false);
+
+            if (resultPopup != null)
+                resultPopup.SetActive(false);
+
+            if (popupPanel != null)
+                popupPanel.SetActive(false);
+
+            player.gameObject.SetActive(true);
+            player.enabled = true;
+            player.SetCombatGroup(TowerCombatGroup);
+            _main.ConfigureTowerPlayer(player);
             ConfigureTowerWorldAndCamera();
             _remainingTime = _setup.timeLimit;
             _normalRemaining = _setup.normalEnemyCount;
             _bossRemaining = _setup.bossCount;
             _totalStageHealth = CalculateTotalStageHealth();
-            if (_towerNameText != null)
-                _towerNameText.text = $"{(_setup.type == TowerType.Gold ? "골드의 탑" : "보석의 탑")} Lv.{_setup.floor}";
+            if (towerNameText != null)
+                towerNameText.text =
+                    $"{(_setup.type == TowerType.Gold ? "골드의 탑" : "보석의 탑")} Lv.{_setup.floor}";
 
-            BindButton("ExitButton", OpenPause);
-            BindButton("ResumeButton", Resume);
-            BindButton("ContinueButton", Resume);
-            BindButton("Btn_Resume", Resume);
-            BindButton("QuitButton", ExitTower);
-            BindButton("ExitConfirmButton", ExitTower);
-            BindButton("Btn_Exit", ExitTower);
-            BindButton("ConfirmButton", CloseResult);
-            BindButton("Btn_Confirm", CloseResult);
-            BindButton("Btn_Yes", ExitTower);
-            BindButton("Btn_No", Resume);
-            BindButton("Btn_Retry", RetryFloor);
-            BindButton("Btn_Next", NextFloor);
-
-            GameObject skillUi = FindObject("SkillUI");
-            if (skillUi != null)
-            {
-                SkillBarController bar = skillUi.GetComponent<SkillBarController>();
-                if (bar != null)
-                    bar.BindTower(_main, _player);
-                else
-                    Debug.LogError("TowerBattleScene의 SkillUI에 SkillBarController가 연결되지 않았습니다.", skillUi);
-            }
+            BindButtons();
+            skillBar?.BindTower(_main, player);
 
             SpawnNormalEnemies();
             SpawnNextBoss();
@@ -137,7 +135,7 @@ namespace LostFamiliar.Battle
         private void Update()
         {
             if (_main == null || _finished || _paused || _completionPending) return;
-            if (_player != null && !_player.IsAlive)
+            if (player != null && !player.IsAlive)
             {
                 StartCoroutine(TimeoutReturnRoutine());
                 return;
@@ -153,7 +151,7 @@ namespace LostFamiliar.Battle
             for (int i = 0; i < _setup.normalEnemyCount; i++)
             {
                 float side = i % 2 == 0 ? 1f : -1f;
-                Vector3 position = _player.transform.position +
+                Vector3 position = player.transform.position +
                     new Vector3(side * UnityEngine.Random.Range(4.5f, 6.5f), UnityEngine.Random.Range(-2.4f, 2.4f), 0f);
                 SpawnEnemy(data, false, position, _setup.normalEnemyHealth);
             }
@@ -163,28 +161,37 @@ namespace LostFamiliar.Battle
         {
             if (_finished || _bossRemaining <= 0) return;
             EnemyData data = _main.CurrentStage?.Boss ?? _main.CurrentStage?.region?.PickEnemy(_main.StageNumber);
-            Transform anchor = FindObject("EnemyBase")?.transform;
-            Vector3 position = anchor != null
-                ? anchor.position
-                : _player.transform.position + Vector3.right * 4f;
+            Vector3 position = enemyBase != null
+                ? enemyBase.position
+                : player.transform.position + Vector3.right * 4f;
             _currentBoss = SpawnEnemy(data, true, position, _setup.bossHealth);
             UpdateUi();
         }
 
         private EnemyActor SpawnEnemy(EnemyData data, bool boss, Vector3 position, double desiredHealth)
         {
-            if (data == null) return null;
-            GameObject instance = data.prefab != null
-                ? Instantiate(data.prefab)
-                : GameObject.CreatePrimitive(boss ? PrimitiveType.Capsule : PrimitiveType.Sphere);
+            if (data == null || data.prefab == null)
+            {
+                Debug.LogError($"Tower enemy prefab이 없습니다: {data?.name}", this);
+                return null;
+            }
+
+            GameObject instance = Instantiate(data.prefab);
             SceneManager.MoveGameObjectToScene(instance, gameObject.scene);
             instance.transform.position = position;
             instance.SetActive(true);
             SetLayerRecursively(instance, TowerWorldLayer);
-            EnemyActor enemy = instance.GetComponent<EnemyActor>() ?? instance.AddComponent<EnemyActor>();
+            EnemyActor enemy = instance.GetComponent<EnemyActor>();
+            if (enemy == null)
+            {
+                Debug.LogError($"Enemy prefab '{data.name}'에 EnemyActor가 없습니다.", instance);
+                Destroy(instance);
+                return null;
+            }
+
             double healthMultiplier = desiredHealth / Math.Max(1d, data.baseHealth);
             double attackMultiplier = _setup.enemyAttack / Math.Max(1d, data.baseAttack);
-            enemy.Initialize(data, _player, healthMultiplier, attackMultiplier, boss, 1f, 1f);
+            enemy.Initialize(data, player, healthMultiplier, attackMultiplier, boss, 1f, 1f);
             if (boss) enemy.SetWorldHealthBarVisible(true);
             enemy.Died += OnEnemyDied;
             _enemies.Add(enemy);
@@ -212,7 +219,7 @@ namespace LostFamiliar.Battle
         private IEnumerator CompleteAfterDeathEffects()
         {
             _completionPending = true;
-            if (_player != null) _player.enabled = false;
+            if (player != null) player.enabled = false;
             float waitLimit = 2f;
             while (waitLimit > 0f)
             {
@@ -228,7 +235,7 @@ namespace LostFamiliar.Battle
                 if (enemy != null && enemy.CombatGroup == TowerCombatGroup && enemy.Health > 0f)
                 {
                     _completionPending = false;
-                    if (_player != null) _player.enabled = true;
+                    if (player != null) player.enabled = true;
                     yield break;
                 }
             }
@@ -236,11 +243,11 @@ namespace LostFamiliar.Battle
             if (_normalRemaining > 0 || _bossRemaining > 0)
             {
                 _completionPending = false;
-                if (_player != null) _player.enabled = true;
+                if (player != null) player.enabled = true;
                 yield break;
             }
 
-            if (_bossHpFill != null) _bossHpFill.fillAmount = 0f;
+            if (bossHpFill != null) bossHpFill.fillAmount = 0f;
             Finish(true);
         }
 
@@ -252,12 +259,7 @@ namespace LostFamiliar.Battle
             TowerRunResult result = _main.CompleteTowerRun(cleared, _remainingTime);
             GameAudioManager.Instance.PlayBgm(
                 cleared ? "BGM_Result_Victory" : "BGM_Result_Defeat", false);
-            SetPopupVisible(_resultPopup, true);
-            SetOptionalText("GradeText", result.grade.ToString());
-            string reward = result.type == TowerType.Gold
-                ? $"골드 +{MainHUDController.FormatNumber(result.goldReward)}"
-                : $"보석 +{result.gemReward}";
-            SetOptionalText("RewardText", reward);
+            SetPopupVisible(resultPopup, true);
             UpdateResultReward(result);
             UpdateResultActionTickets(cleared);
         }
@@ -267,7 +269,7 @@ namespace LostFamiliar.Battle
             if (_finished || _paused || _completionPending) return;
             _paused = true;
             SetTowerCombatEnabled(false);
-            SetPopupVisible(_pausePopup, true);
+            SetPopupVisible(pausePopup, true);
         }
 
         public void Resume()
@@ -275,7 +277,7 @@ namespace LostFamiliar.Battle
             if (_finished) return;
             _paused = false;
             SetTowerCombatEnabled(true);
-            SetPopupVisible(_pausePopup, false);
+            SetPopupVisible(pausePopup, false);
         }
 
         public void ExitTower()
@@ -306,13 +308,14 @@ namespace LostFamiliar.Battle
             _completionPending = false;
             _paused = false;
             GameAudioManager.Instance.PlayBgm("BGM_Tower");
-            SetPopupVisible(_resultPopup, false);
-            SetPopupVisible(_pausePopup, false);
-            _player.ResetPosition();
-            _main.ConfigureTowerPlayer(_player);
-            _player.enabled = true;
-            if (_towerNameText != null)
-                _towerNameText.text = $"{(_setup.type == TowerType.Gold ? "골드의 탑" : "보석의 탑")} Lv.{_setup.floor}";
+            SetPopupVisible(resultPopup, false);
+            SetPopupVisible(pausePopup, false);
+            player.ResetPosition();
+            _main.ConfigureTowerPlayer(player);
+            player.enabled = true;
+            if (towerNameText != null)
+                towerNameText.text =
+                    $"{(_setup.type == TowerType.Gold ? "골드의 탑" : "보석의 탑")} Lv.{_setup.floor}";
             SpawnNormalEnemies();
             SpawnNextBoss();
             UpdateUi();
@@ -380,18 +383,19 @@ namespace LostFamiliar.Battle
 
         private void UpdateResultReward(TowerRunResult result)
         {
-            GameObject rewardItem = FindDescendant(_resultPopup, "RewardItem");
-            TMP_Text amount = FindDescendantComponent<TMP_Text>(rewardItem, "AmountText");
-            if (amount != null)
-                amount.text = result.type == TowerType.Gold
+            if (resultRewardAmountText != null)
+            {
+                resultRewardAmountText.text = result.type == TowerType.Gold
                     ? MainHUDController.FormatNumber(result.goldReward)
                     : result.gemReward.ToString();
+            }
 
-            Image icon = FindDescendantComponent<Image>(rewardItem, "IconImage");
-            GameObject adventure = FindOtherSceneObject("AdventurePopup");
-            GameObject sourceReward = FindDescendant(adventure, "RewardItem");
-            Image sourceIcon = FindDescendantComponent<Image>(sourceReward, "IconImage");
-            if (icon != null && sourceIcon != null) icon.sprite = sourceIcon.sprite;
+            if (resultRewardIcon != null)
+            {
+                resultRewardIcon.sprite = result.type == TowerType.Gold
+                    ? goldRewardIcon
+                    : gemRewardIcon;
+            }
         }
 
         private void UpdateResultActionTickets(bool cleared)
@@ -399,62 +403,69 @@ namespace LostFamiliar.Battle
             TowerProgressData progress = _main?.GetTowerProgress(_setup.type);
             int ticketCount = progress?.tickets ?? 0;
             bool hasTicket = ticketCount > 0;
-            Button retryButton = FindComponent<Button>("Btn_Retry");
-            Button nextButton = FindComponent<Button>("Btn_Next");
             if (retryButton != null) retryButton.interactable = hasTicket;
             if (nextButton != null)
                 nextButton.interactable = hasTicket && cleared && progress != null &&
                     _setup.floor + 1 <= progress.highestUnlockedFloor;
 
-            GameObject adventure = FindOtherSceneObject("AdventurePopup");
-            Image sourceTicketIcon = FindDescendantComponent<Image>(adventure, "Icon_Ticket");
-            UpdateButtonTicket(retryButton, sourceTicketIcon?.sprite, ticketCount);
-            UpdateButtonTicket(nextButton, sourceTicketIcon?.sprite, ticketCount);
+            Sprite ticketSprite = _setup.type == TowerType.Gold
+                ? goldTicketIcon
+                : gemTicketIcon;
+
+            UpdateButtonTicket(
+                retryTicketIcon,
+                retryTicketCountText,
+                ticketSprite,
+                ticketCount);
+
+            UpdateButtonTicket(
+                nextTicketIcon,
+                nextTicketCountText,
+                ticketSprite,
+                ticketCount);
         }
 
-        private static void UpdateButtonTicket(Button button, Sprite ticketSprite, int ticketCount)
+        private static void UpdateButtonTicket(
+            Image icon,
+            TMP_Text countText,
+            Sprite ticketSprite,
+            int ticketCount)
         {
-            if (button == null) return;
-            GameObject ticketRoot = FindDescendant(button.gameObject, "Ticket");
-            if (ticketRoot != null && ticketRoot.GetComponent<KeepGraphicVisualWhenButtonDisabled>() == null)
-                ticketRoot.AddComponent<KeepGraphicVisualWhenButtonDisabled>();
-            Image icon = FindDescendantComponent<Image>(button.gameObject, "TicketIcon");
-            TMP_Text countText = FindDescendantComponent<TMP_Text>(button.gameObject, "CountText");
-            if (icon != null && ticketSprite != null) icon.sprite = ticketSprite;
-            if (countText != null) countText.text = Mathf.Max(0, ticketCount).ToString();
-            ButtonChildDisabledVisual visual = button.GetComponent<ButtonChildDisabledVisual>();
-            visual?.RefreshGraphics();
+            if (icon != null && ticketSprite != null)
+                icon.sprite = ticketSprite;
+
+            if (countText != null)
+                countText.text = Mathf.Max(0, ticketCount).ToString();
         }
 
         private void SetPopupVisible(GameObject popup, bool visible)
         {
             if (popup != null) popup.SetActive(visible);
-            if (_popupPanel != null)
-                _popupPanel.SetActive(visible ||
-                    (_pausePopup != null && _pausePopup.activeSelf) ||
-                    (_resultPopup != null && _resultPopup.activeSelf));
+            if (popupPanel != null)
+                popupPanel.SetActive(visible ||
+                    (pausePopup != null && pausePopup.activeSelf) ||
+                    (resultPopup != null && resultPopup.activeSelf));
         }
 
         private void ReturnToAdventureAndUnload()
         {
-            GameObject adventure = FindOtherSceneObject("AdventurePopup");
-            if (adventure != null) adventure.SetActive(true);
+            _main?.ShowAdventurePopup();
             UnloadTowerScene();
         }
 
         private void SetTowerCombatEnabled(bool enabled)
         {
-            if (_player != null) _player.enabled = enabled;
+            if (player != null) player.enabled = enabled;
             foreach (EnemyActor enemy in _enemies)
                 if (enemy != null) enemy.enabled = enabled;
         }
 
         private void UpdateUi()
         {
-            if (_timeText != null)
+            if (timeText != null)
             {
-                _timeText.text = _remainingTime.ToString("0.0");
-                _timeText.color = _remainingTime <= 5f
+                timeText.text = _remainingTime.ToString("0.0");
+                timeText.color = _remainingTime <= 5f
                     ? new Color32(0xE5, 0x40, 0x26, 0xFF)
                     : _remainingTime <= 12f
                         ? new Color32(0xF1, 0x70, 0x41, 0xFF)
@@ -462,14 +473,14 @@ namespace LostFamiliar.Battle
                             ? new Color32(0xFF, 0xBF, 0x67, 0xFF)
                             : _defaultTimeTextColor;
             }
-            if (_bossHpFill != null)
+            if (bossHpFill != null)
             {
                 double remainingHealth = 0d;
                 foreach (EnemyActor enemy in _enemies)
                     if (enemy != null) remainingHealth += Math.Max(0f, enemy.Health);
                 int unspawnedBosses = Math.Max(0, _bossRemaining - (_currentBoss != null ? 1 : 0));
                 remainingHealth += unspawnedBosses * _setup.bossHealth;
-                _bossHpFill.fillAmount = _totalStageHealth > 0d
+                bossHpFill.fillAmount = _totalStageHealth > 0d
                     ? Mathf.Clamp01((float)(remainingHealth / _totalStageHealth))
                     : 0f;
             }
@@ -509,40 +520,37 @@ namespace LostFamiliar.Battle
 
         private void ConfigureTowerWorldAndCamera()
         {
-            GameObject world = FindObject("World");
-            if (world != null) SetLayerRecursively(world, TowerWorldLayer);
-            SetLayerRecursively(_player.gameObject, TowerWorldLayer);
+            if (worldRoot != null)
+                SetLayerRecursively(worldRoot, TowerWorldLayer);
 
-            Camera towerCamera = FindInScene<Camera>();
+            SetLayerRecursively(player.gameObject, TowerWorldLayer);
+
             if (towerCamera != null)
             {
                 towerCamera.enabled = true;
                 towerCamera.cullingMask = 1 << TowerWorldLayer;
-                CameraFollow2D follow = towerCamera.GetComponent<CameraFollow2D>();
-                if (follow != null)
-                {
-                    follow.Bind(_player.transform);
-                    follow.SnapToTarget();
-                }
-                else
-                {
-                    Debug.LogError("Tower Camera에 CameraFollow2D가 없습니다.", towerCamera);
-                }
             }
 
-            GameObject background = FindObject("Background");
-            if (background != null)
+            if (cameraFollow != null)
             {
+                cameraFollow.Bind(player.transform);
+                cameraFollow.SnapToTarget();
+            }
+            else
+            {
+                Debug.LogError("Tower CameraFollow2D가 연결되지 않았습니다.", this);
+            }
+
+            if (background != null)
                 SetLayerRecursively(background, TowerWorldLayer);
-                BackgroundTiler2D tiler = background.GetComponent<BackgroundTiler2D>();
-                if (tiler != null)
-                {
-                    tiler.Bind(_player.transform);
-                }
-                else
-                {
-                    Debug.LogError("Tower Background에 BackgroundTiler2D가 없습니다.", background);
-                }
+
+            if (backgroundTiler != null)
+            {
+                backgroundTiler.Bind(player.transform);
+            }
+            else
+            {
+                Debug.LogError("Tower BackgroundTiler2D가 연결되지 않았습니다.", this);
             }
         }
 
@@ -581,66 +589,16 @@ namespace LostFamiliar.Battle
             if (!_finished) _main?.CancelTowerRun();
         }
 
-        private void BindButton(string name, UnityAction action)
+        private void BindButtons()
         {
-            Button button = FindComponent<Button>(name);
-            if (button != null) button.onClick.AddListener(action);
+            exitButton?.onClick.AddListener(OpenPause);
+            exitConfirmButton?.onClick.AddListener(ExitTower);
+            exitCancelButton?.onClick.AddListener(Resume);
+
+            resultConfirmButton?.onClick.AddListener(CloseResult);
+            retryButton?.onClick.AddListener(RetryFloor);
+            nextButton?.onClick.AddListener(NextFloor);
         }
 
-        private void SetOptionalText(string name, string value)
-        {
-            TMP_Text text = FindComponent<TMP_Text>(name);
-            if (text != null) text.text = value;
-        }
-
-        private T FindInScene<T>() where T : Component
-        {
-            foreach (GameObject root in gameObject.scene.GetRootGameObjects())
-            {
-                T result = root.GetComponentInChildren<T>(true);
-                if (result != null) return result;
-            }
-            return null;
-        }
-
-        private GameObject FindObject(string name, string parentName = null)
-        {
-            foreach (GameObject root in gameObject.scene.GetRootGameObjects())
-                foreach (Transform child in root.GetComponentsInChildren<Transform>(true))
-                    if (child.name == name && (parentName == null || child.parent?.name == parentName))
-                        return child.gameObject;
-            return null;
-        }
-
-        private T FindComponent<T>(string name, string parentName = null) where T : Component
-        {
-            GameObject found = FindObject(name, parentName);
-            return found != null ? found.GetComponent<T>() : null;
-        }
-
-        private GameObject FindOtherSceneObject(string name)
-        {
-            foreach (GameObject root in GetOtherSceneRoots())
-            {
-                if (root.name == name) return root;
-                foreach (Transform child in root.GetComponentsInChildren<Transform>(true))
-                    if (child.name == name) return child.gameObject;
-            }
-            return null;
-        }
-
-        private static GameObject FindDescendant(GameObject root, string name)
-        {
-            if (root == null) return null;
-            foreach (Transform child in root.GetComponentsInChildren<Transform>(true))
-                if (child.name == name) return child.gameObject;
-            return null;
-        }
-
-        private static T FindDescendantComponent<T>(GameObject root, string name) where T : Component
-        {
-            GameObject found = FindDescendant(root, name);
-            return found != null ? found.GetComponent<T>() : null;
-        }
     }
 }

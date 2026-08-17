@@ -368,10 +368,6 @@ namespace LostFamiliar.Battle
     // Marker for buttons that must block clicks without changing their appearance.
     public sealed class KeepButtonVisualWhenDisabled : MonoBehaviour { }
 
-    // Graphics below this marker keep their original alpha even if an ancestor
-    // button is disabled.
-    public sealed class KeepGraphicVisualWhenButtonDisabled : MonoBehaviour { }
-
     // Unity's Button color transition only fades its Target Graphic. This system
     // gives every text/image added below the button the same disabled opacity.
     internal sealed class ButtonChildDisabledVisual : MonoBehaviour

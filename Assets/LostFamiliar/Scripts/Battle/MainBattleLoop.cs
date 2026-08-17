@@ -264,9 +264,13 @@ namespace LostFamiliar.Battle
                 return;
             }
 
-            GameObject enemyObject = data.prefab != null
-                ? Instantiate(data.prefab)
-                : GameObject.CreatePrimitive(boss ? PrimitiveType.Capsule : PrimitiveType.Sphere);
+            if (data.prefab == null)
+            {
+                Debug.LogError($"Enemy prefab이 없습니다: {data.name}", this);
+                return;
+            }
+
+            GameObject enemyObject = Instantiate(data.prefab);
 
             if (fixedPosition.HasValue)
             {
@@ -279,7 +283,14 @@ namespace LostFamiliar.Battle
                                                  new Vector3(side * UnityEngine.Random.Range(4.5f, 6f), UnityEngine.Random.Range(-2.5f, 2.5f), 0f);
             }
 
-            EnemyActor enemy = enemyObject.GetComponent<EnemyActor>() ?? enemyObject.AddComponent<EnemyActor>();
+            EnemyActor enemy = enemyObject.GetComponent<EnemyActor>();
+            if (enemy == null)
+            {
+                Debug.LogError($"Enemy prefab '{data.name}'에 EnemyActor가 없습니다.", enemyObject);
+                Destroy(enemyObject);
+                return;
+            }
+
             enemy.Initialize(
                 data,
                 player,
@@ -749,6 +760,12 @@ namespace LostFamiliar.Battle
         public TowerProgressData GetTowerProgress(TowerType type)
         {
             return TowerSystem?.GetProgress(type);
+        }
+
+        public void ShowAdventurePopup()
+        {
+            if (adventureTowerPopup != null)
+                adventureTowerPopup.gameObject.SetActive(true);
         }
 
         public bool RefreshDailyTowerTickets()

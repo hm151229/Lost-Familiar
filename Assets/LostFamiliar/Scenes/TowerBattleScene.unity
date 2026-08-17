@@ -234,8 +234,8 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: c9718afd3e034204f855491a31750215, type: 3}
-  m_Name:
-  m_EditorClassIdentifier:
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!1001 &93485696
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -351,8 +351,8 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: c9718afd3e034204f855491a31750215, type: 3}
-  m_Name:
-  m_EditorClassIdentifier:
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!1 &419473710
 GameObject:
   m_ObjectHideFlags: 0
@@ -1199,6 +1199,18 @@ SpriteRenderer:
   m_WasSpriteAssigned: 1
   m_MaskInteraction: 0
   m_SpriteSortPoint: 0
+--- !u!114 &715317179
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 715317176}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e1b5f31cb2ca4ad8ac8e17840f59c4be, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!1 &754393781
 GameObject:
   m_ObjectHideFlags: 0
@@ -1678,6 +1690,7 @@ Transform:
   m_Children:
   - {fileID: 754393782}
   - {fileID: 817762821}
+  - {fileID: 2148000101}
   m_Father: {fileID: 1303813144}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &908111341
@@ -3618,6 +3631,7 @@ GameObject:
   - component: {fileID: 1454012746}
   - component: {fileID: 1454012748}
   - component: {fileID: 1454012747}
+  - component: {fileID: 2148000105}
   m_Layer: 5
   m_Name: Ticket
   m_TagString: Untagged
@@ -4844,6 +4858,7 @@ GameObject:
   - component: {fileID: 1778516899}
   - component: {fileID: 1778516901}
   - component: {fileID: 1778516900}
+  - component: {fileID: 2148000106}
   m_Layer: 5
   m_Name: Ticket
   m_TagString: Untagged
@@ -5844,6 +5859,19 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &2093990614
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2093990609}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d4c4f22013584e7f9c4e3104d8bd5312, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  smoothTime: 0.16
 --- !u!1 &2097409296
 GameObject:
   m_ObjectHideFlags: 0
@@ -5950,31 +5978,136 @@ Transform:
   m_Children: []
   m_Father: {fileID: 1712282454}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &715317179
+--- !u!1 &2148000100
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 2148000101}
+  m_Layer: 0
+  m_Name: EnemyBase
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &2148000101
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2148000100}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 4, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 853845890}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &2148000102
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 2148000103}
+  - component: {fileID: 2148000104}
+  m_Layer: 0
+  m_Name: TowerBattleController
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &2148000103
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2148000102}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &2148000104
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 715317176}
+  m_GameObject: {fileID: 2148000102}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: e1b5f31cb2ca4ad8ac8e17840f59c4be, type: 3}
-  m_Name:
-  m_EditorClassIdentifier:
---- !u!114 &2093990614
+  m_Script: {fileID: 11500000, guid: b71191e14a6907c428869e5d5ec919d0, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  player: {fileID: 817762822}
+  worldRoot: {fileID: 1303813143}
+  towerCamera: {fileID: 2093990612}
+  cameraFollow: {fileID: 2093990614}
+  towerAudioListener: {fileID: 2093990611}
+  background: {fileID: 715317176}
+  backgroundTiler: {fileID: 715317179}
+  enemyBase: {fileID: 2148000101}
+  towerNameText: {fileID: 1575243779}
+  timeText: {fileID: 1168933834}
+  bossHpFill: {fileID: 2036229380}
+  skillBar: {fileID: 1459455568}
+  popupPanel: {fileID: 771979702}
+  pausePopup: {fileID: 997402127}
+  resultPopup: {fileID: 1355522192}
+  exitButton: {fileID: 925658604}
+  exitConfirmButton: {fileID: 1394066886}
+  exitCancelButton: {fileID: 1981446511}
+  resultConfirmButton: {fileID: 1200515868}
+  retryButton: {fileID: 999731196}
+  nextButton: {fileID: 1240899532}
+  resultRewardIcon: {fileID: 427073876}
+  resultRewardAmountText: {fileID: 1448507933}
+  goldTicketIcon: {fileID: 21300000, guid: dc143e2844b265a4ca03afb022f529db, type: 3}
+  gemTicketIcon: {fileID: 21300000, guid: 70d052f1c0c8fcf4aa3ddfc24390c247, type: 3}
+  retryTicketIcon: {fileID: 816268301}
+  retryTicketCountText: {fileID: 1305643702}
+  nextTicketIcon: {fileID: 1733453695}
+  nextTicketCountText: {fileID: 1094576408}
+  goldRewardIcon: {fileID: 21300000, guid: c7cbaefabf1ece84a87329fc6b719100, type: 3}
+  gemRewardIcon: {fileID: 21300000, guid: b02364e4cb7fd0244a5c7a08d202066b, type: 3}
+--- !u!114 &2148000105
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2093990609}
+  m_GameObject: {fileID: 1454012745}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: d4c4f22013584e7f9c4e3104d8bd5312, type: 3}
-  m_Name:
-  m_EditorClassIdentifier:
-  smoothTime: 0.16
+  m_Script: {fileID: 11500000, guid: 7f3c11a84bf245f590b5db9a661d0832, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+--- !u!114 &2148000106
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1778516898}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7f3c11a84bf245f590b5db9a661d0832, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0
@@ -5984,3 +6117,4 @@ SceneRoots:
   - {fileID: 1702339952}
   - {fileID: 1303813144}
   - {fileID: 703904417}
+  - {fileID: 2148000103}
