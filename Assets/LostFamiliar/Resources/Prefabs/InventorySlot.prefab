@@ -875,6 +875,7 @@ GameObject:
   - component: {fileID: 5420110881146222001}
   - component: {fileID: 2573660824633154009}
   - component: {fileID: 9060524827909399515}
+  - component: {fileID: 5239246245469427955}
   m_Layer: 5
   m_Name: InventorySlot
   m_TagString: Untagged
@@ -971,3 +972,15 @@ MonoBehaviour:
   installationMaskRoot: {fileID: 2226782683493334598}
   progressFill: {fileID: 5565590777680324450}
   progressText: {fileID: 2273376117410650248}
+--- !u!114 &5239246245469427955
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8810854963732158622}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fad9029ce809b07459242968d4530557, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 

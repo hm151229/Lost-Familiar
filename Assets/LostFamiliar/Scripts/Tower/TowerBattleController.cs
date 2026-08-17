@@ -123,8 +123,10 @@ namespace LostFamiliar.Battle
             if (skillUi != null)
             {
                 SkillBarController bar = skillUi.GetComponent<SkillBarController>();
-                if (bar == null) bar = skillUi.AddComponent<SkillBarController>();
-                bar.BindTower(_main, _player);
+                if (bar != null)
+                    bar.BindTower(_main, _player);
+                else
+                    Debug.LogError("TowerBattleScene의 SkillUI에 SkillBarController가 연결되지 않았습니다.", skillUi);
             }
 
             SpawnNormalEnemies();

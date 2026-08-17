@@ -310,6 +310,7 @@ GameObject:
   m_Component:
   - component: {fileID: 4996744197290219180}
   - component: {fileID: 3084899625514431094}
+  - component: {fileID: 5984539109789300019}
   m_Layer: 5
   m_Name: EquippedSkillSlot
   m_TagString: Untagged
@@ -385,6 +386,24 @@ MonoBehaviour:
   m_OnClick:
     m_PersistentCalls:
       m_Calls: []
+--- !u!114 &5984539109789300019
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7443815012654407372}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fd6e9c449cc303d4ea52210045ef3d8f, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  button: {fileID: 3084899625514431094}
+  background: {fileID: 5372246327462876524}
+  skillIcon: {fileID: 3921603951179339964}
+  plusIcon: {fileID: 988596340532309683}
+  lockIcon: {fileID: 3066862544760880776}
+  selectIcon: {fileID: 2432336087029123368}
 --- !u!1 &8059857292266777056
 GameObject:
   m_ObjectHideFlags: 0

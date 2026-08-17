@@ -10,30 +10,43 @@ namespace LostFamiliar.Battle
     [DisallowMultipleComponent]
     public sealed class SkillPopupController : MonoBehaviour
     {
+        [Header("Owned Skills")]
+        [SerializeField] private Transform ownedContent;
+        [SerializeField] private GameObject ownedSlotPrefab;
+
+        [Header("Equipped Skills")]
+        [SerializeField] private EquippedSkillPopupSlotUI[] equippedSlots;
+
+        [Header("Selected Skill")]
+        [SerializeField] private GameObject selectedPanel;
+        [SerializeField] private GameObject emptyState;
+        [SerializeField] private Image selectedIcon;
+        [SerializeField] private Image rarityBadge;
+        [SerializeField] private TMP_Text rarityText;
+        [SerializeField] private TMP_Text skillNameText;
+        [SerializeField] private TMP_Text descriptionText;
+        [SerializeField] private TMP_Text ownedEffectText;
+        [SerializeField] private TMP_Text selectedLevelText;
+        [SerializeField] private Image selectedProgressFill;
+        [SerializeField] private TMP_Text selectedProgressText;
+
+        [Header("Total Owned Effects")]
+        [SerializeField] private TMP_Text attackEffectText;
+        [SerializeField] private TMP_Text criticalRateEffectText;
+        [SerializeField] private TMP_Text criticalDamageEffectText;
+        [SerializeField] private TMP_Text skillDamageEffectText;
+        [SerializeField] private TMP_Text bossDamageEffectText;
+
+        [Header("Actions")]
+        [SerializeField] private Button equipButton;
+        [SerializeField] private Button mergeAllButton;
+        [SerializeField] private GameObject mergeRedDot;
+
         public bool IsSelectingReplacement { get; private set; }
 
         private MainBattleLoop _battle;
         private SkillData _selectedSkill;
         private readonly List<OwnedSkillItemUI> _ownedSlots = new();
-        private readonly List<EquippedSkillPopupSlotUI> _equippedSlots = new();
-        private Transform _ownedContent;
-        private GameObject _ownedSlotPrefab;
-        private bool _ownedContentInitialized;
-        private GameObject _selectedPanel;
-        private GameObject _emptyState;
-        private Image _selectedIcon;
-        private Image _rarityBadge;
-        private TMP_Text _rarityText;
-        private TMP_Text _skillNameText;
-        private TMP_Text _descriptionText;
-        private TMP_Text _ownedEffectText;
-        private TMP_Text _selectedLevelText;
-        private Image _selectedProgressFill;
-        private TMP_Text _selectedProgressText;
-        private readonly Dictionary<EquipmentEffectType, TMP_Text> _totalEffectTexts = new();
-        private Button _equipButton;
-        private Button _mergeAllButton;
-        private GameObject _mergeRedDot;
         private UnityAction _equipAction;
         private UnityAction _mergeAction;
 
@@ -45,9 +58,8 @@ namespace LostFamiliar.Battle
             if (_battle != null)
                 _battle.StateChanged += Refresh;
 
-            FindReferences();
             BindButtons();
-            BuildEquippedSlots();
+            BindEquippedSlots();
             Refresh();
         }
 
@@ -120,7 +132,6 @@ namespace LostFamiliar.Battle
 
         private void Refresh()
         {
-            FindReferences();
             BuildOwnedSlots();
             RefreshEquippedSlots();
             RefreshSelectedPanel();
@@ -128,51 +139,31 @@ namespace LostFamiliar.Battle
             RefreshMergeButton();
         }
 
-        private void BuildEquippedSlots()
+        private void BindEquippedSlots()
         {
-            _equippedSlots.Clear();
-            Transform section = SkillBarController.FindDescendant(transform, "EquippedSkillSection");
-            if (section == null) return;
-            for (int i = 0; i < SkillBalance.MaxEquippedSkillCount; i++)
-            {
-                Transform slotTransform = SkillBarController.FindDescendant(section, $"EquippedSkillSlot{i + 1:00}");
-                if (slotTransform == null) continue;
-                EquippedSkillPopupSlotUI slot = slotTransform.GetComponent<EquippedSkillPopupSlotUI>();
-                if (slot == null) slot = slotTransform.gameObject.AddComponent<EquippedSkillPopupSlotUI>();
-                slot.Bind(_battle, this, i);
-                _equippedSlots.Add(slot);
-            }
+            if (equippedSlots == null)
+                return;
+
+            for (int i = 0; i < equippedSlots.Length; i++)
+                equippedSlots[i]?.Bind(_battle, this, i);
         }
 
         private void BuildOwnedSlots()
         {
             IReadOnlyList<SkillData> owned = _battle?.GetOwnedSkills();
             int count = owned?.Count ?? 0;
-            if (!_ownedContentInitialized)
-            {
-                Transform section = SkillBarController.FindDescendant(transform, "OwnedSkillSection");
-                ScrollRect scroll = section != null ? section.GetComponentInChildren<ScrollRect>(true) : null;
-                _ownedContent = scroll != null ? scroll.content : SkillBarController.FindDescendant(section, "Content");
-                _ownedSlotPrefab = Resources.Load<GameObject>("Prefabs/InventorySlot");
-                if (_ownedContent != null)
-                {
-                    // Scene children are layout previews only. Runtime contents are always
-                    // rebuilt from the actual owned-skill inventory.
-                    for (int i = _ownedContent.childCount - 1; i >= 0; i--)
-                    {
-                        GameObject preview = _ownedContent.GetChild(i).gameObject;
-                        preview.SetActive(false);
-                        Destroy(preview);
-                    }
-                }
-                _ownedContentInitialized = true;
-            }
 
-            while (_ownedSlots.Count < count && _ownedSlotPrefab != null && _ownedContent != null)
+            while (_ownedSlots.Count < count && ownedSlotPrefab != null && ownedContent != null)
             {
-                GameObject clone = Instantiate(_ownedSlotPrefab, _ownedContent);
+                GameObject clone = Instantiate(ownedSlotPrefab, ownedContent);
                 clone.name = $"OwnedSkillSlot{_ownedSlots.Count + 1:00}";
-                OwnedSkillItemUI item = clone.GetComponent<OwnedSkillItemUI>() ?? clone.AddComponent<OwnedSkillItemUI>();
+                OwnedSkillItemUI item = clone.GetComponent<OwnedSkillItemUI>();
+                if (item == null)
+                {
+                    Debug.LogError("Owned skill slot prefab에 OwnedSkillItemUI가 없습니다.", clone);
+                    Destroy(clone);
+                    break;
+                }
                 _ownedSlots.Add(item);
             }
 
@@ -194,9 +185,10 @@ namespace LostFamiliar.Battle
 
         private void RefreshEquippedSlots()
         {
-            if (_equippedSlots.Count == 0)
-                BuildEquippedSlots();
-            foreach (EquippedSkillPopupSlotUI slot in _equippedSlots)
+            if (equippedSlots == null)
+                return;
+
+            foreach (EquippedSkillPopupSlotUI slot in equippedSlots)
                 slot?.Refresh();
         }
 
@@ -212,27 +204,24 @@ namespace LostFamiliar.Battle
             int required = level > 0 ? SkillBalance.DuplicateRequirement(level) : 1;
             bool isMax = level >= _selectedSkill.maxLevel;
             Color rarityColor = EquipmentBalance.RarityColor(_selectedSkill.rarity);
-            if (_selectedIcon != null)
+            if (selectedIcon != null)
             {
-                _selectedIcon.sprite = _selectedSkill.icon;
-                _selectedIcon.enabled = _selectedSkill.icon != null;
-                _selectedIcon.preserveAspect = true;
+                selectedIcon.sprite = _selectedSkill.icon;
+                selectedIcon.enabled = _selectedSkill.icon != null;
+                selectedIcon.preserveAspect = true;
             }
-            if (_rarityBadge != null) _rarityBadge.color = rarityColor;
-            if (_rarityText != null)
-                _rarityText.text = SkillUiFormatting.Rarity(_selectedSkill.rarity);
-            if (_skillNameText != null) _skillNameText.text = _selectedSkill.displayName;
-            if (_descriptionText != null) _descriptionText.text = _selectedSkill.description;
-            if (_ownedEffectText != null) _ownedEffectText.text = SkillUiFormatting.Effect(_selectedSkill, level);
-            if (_selectedLevelText != null) _selectedLevelText.text = $"Lv.{Mathf.Max(0, level)}";
-            if (_selectedProgressText != null)
-                _selectedProgressText.text = isMax ? "MAX" : $"{Mathf.Max(0, duplicates)}/{Mathf.Max(1, required)}";
-            if (_selectedProgressFill != null)
+            if (rarityBadge != null) rarityBadge.color = rarityColor;
+            if (rarityText != null)
+                rarityText.text = SkillUiFormatting.Rarity(_selectedSkill.rarity);
+            if (skillNameText != null) skillNameText.text = _selectedSkill.displayName;
+            if (descriptionText != null) descriptionText.text = _selectedSkill.description;
+            if (ownedEffectText != null) ownedEffectText.text = SkillUiFormatting.Effect(_selectedSkill, level);
+            if (selectedLevelText != null) selectedLevelText.text = $"Lv.{Mathf.Max(0, level)}";
+            if (selectedProgressText != null)
+                selectedProgressText.text = isMax ? "MAX" : $"{Mathf.Max(0, duplicates)}/{Mathf.Max(1, required)}";
+            if (selectedProgressFill != null)
             {
-                _selectedProgressFill.type = Image.Type.Filled;
-                _selectedProgressFill.fillMethod = Image.FillMethod.Horizontal;
-                _selectedProgressFill.fillOrigin = (int)Image.OriginHorizontal.Left;
-                _selectedProgressFill.fillAmount = isMax
+                selectedProgressFill.fillAmount = isMax
                     ? 1f
                     : Mathf.Clamp01(duplicates / (float)Mathf.Max(1, required));
             }
@@ -241,21 +230,21 @@ namespace LostFamiliar.Battle
             if (_battle != null)
                 for (int i = 0; i < _battle.UnlockedSkillSlotCount; i++)
                     if (_battle.GetEquippedSkillId(i) == _selectedSkill.id) alreadyEquipped = true;
-            if (_equipButton != null)
-                _equipButton.interactable = _battle != null && level > 0 && !alreadyEquipped && _battle.UnlockedSkillSlotCount > 0;
+            if (equipButton != null)
+                equipButton.interactable = _battle != null && level > 0 && !alreadyEquipped && _battle.UnlockedSkillSlotCount > 0;
         }
 
         private void RefreshSelectedPanelVisibility(bool selected)
         {
-            if (_selectedPanel == null)
+            if (selectedPanel == null)
                 return;
 
-            _selectedPanel.SetActive(true);
-            Transform panel = _selectedPanel.transform;
+            selectedPanel.SetActive(true);
+            Transform panel = selectedPanel.transform;
             for (int i = 0; i < panel.childCount; i++)
             {
                 GameObject child = panel.GetChild(i).gameObject;
-                bool isEmptyState = child == _emptyState || child.name == "EmptyState";
+                bool isEmptyState = child == emptyState || child.name == "EmptyState";
                 bool isBackground = child.name == "BG";
                 child.SetActive(selected ? !isEmptyState : isBackground || isEmptyState);
             }
@@ -263,7 +252,9 @@ namespace LostFamiliar.Battle
 
         private void RefreshTotalOwnedEffects()
         {
-            if (_battle == null) return;
+            if (_battle == null)
+                return;
+
             var totals = new Dictionary<EquipmentEffectType, float>();
             foreach (SkillData skill in _battle.GetOwnedSkills())
             {
@@ -271,11 +262,24 @@ namespace LostFamiliar.Battle
                 float value = SkillBalance.OwnedEffectValue(skill, state?.level ?? 0);
                 totals[skill.ownedEffectType] = totals.TryGetValue(skill.ownedEffectType, out float old) ? old + value : value;
             }
-            foreach (var pair in _totalEffectTexts)
-            {
-                float value = totals.TryGetValue(pair.Key, out float total) ? total : 0f;
-                if (pair.Value != null) pair.Value.text = $"+{value:0.##}%";
-            }
+
+            SetTotalEffect(attackEffectText, totals, EquipmentEffectType.AttackPercent);
+            SetTotalEffect(criticalRateEffectText, totals, EquipmentEffectType.CriticalChancePercentPoint);
+            SetTotalEffect(criticalDamageEffectText, totals, EquipmentEffectType.CriticalDamagePercent);
+            SetTotalEffect(skillDamageEffectText, totals, EquipmentEffectType.SkillDamagePercent);
+            SetTotalEffect(bossDamageEffectText, totals, EquipmentEffectType.BossDamagePercent);
+        }
+
+        private static void SetTotalEffect(
+            TMP_Text text,
+            IReadOnlyDictionary<EquipmentEffectType, float> totals,
+            EquipmentEffectType type)
+        {
+            if (text == null)
+                return;
+
+            float value = totals.TryGetValue(type, out float total) ? total : 0f;
+            text.text = $"+{value:0.##}%";
         }
 
         private void RefreshMergeButton()
@@ -284,73 +288,31 @@ namespace LostFamiliar.Battle
             if (_battle != null)
                 foreach (SkillData skill in _battle.GetOwnedSkills())
                     if (_battle.CanUpgradeSkill(skill.id)) { canMerge = true; break; }
-            if (_mergeAllButton != null) _mergeAllButton.interactable = canMerge;
-            if (_mergeRedDot != null) _mergeRedDot.SetActive(canMerge);
-        }
-
-        private void FindReferences()
-        {
-            Transform selected = SkillBarController.FindDescendant(transform, "SelectedSkillPanel");
-            _selectedPanel ??= selected?.gameObject;
-            _emptyState ??= SkillBarController.FindDescendant(selected, "EmptyState")?.gameObject;
-            _selectedIcon ??= Find<Image>(selected, "Icon_Skill");
-            _rarityBadge ??= Find<Image>(selected, "Badge_Rarity");
-            _rarityText ??= Find<TMP_Text>(selected, "RarityText");
-            _skillNameText ??= Find<TMP_Text>(selected, "SkillNameText");
-            _descriptionText ??= Find<TMP_Text>(selected, "DescriptionText");
-            _ownedEffectText ??= Find<TMP_Text>(selected, "OwnedEffectValueText");
-            Transform levelProgress = SkillBarController.FindDescendant(selected, "LevelProgressGroup");
-            _selectedLevelText ??= Find<TMP_Text>(levelProgress, "LevelText");
-            Transform progressBar = SkillBarController.FindDescendant(levelProgress, "ProgressBar");
-            _selectedProgressFill ??= Find<Image>(progressBar, "Fill");
-            _selectedProgressText ??= Find<TMP_Text>(progressBar, "ProgressText");
-
-            Transform totalSection = SkillBarController.FindDescendant(transform, "TotalOwnedEffectSection");
-            FindTotalEffectText(totalSection, "Stat_Attack", EquipmentEffectType.AttackPercent);
-            FindTotalEffectText(totalSection, "Stat_CriticalRate", EquipmentEffectType.CriticalChancePercentPoint);
-            FindTotalEffectText(totalSection, "Stat_CriticalDamage", EquipmentEffectType.CriticalDamagePercent);
-            FindTotalEffectText(totalSection, "Stat_SkillDamage", EquipmentEffectType.SkillDamagePercent);
-            FindTotalEffectText(totalSection, "Stat_BossDamage", EquipmentEffectType.BossDamagePercent);
-            Transform equip = SkillBarController.FindDescendant(transform, "Btn_Equip");
-            _equipButton ??= equip?.GetComponent<Button>();
-            Transform merge = SkillBarController.FindDescendant(transform, "Btn_MergeAll");
-            _mergeAllButton ??= merge?.GetComponent<Button>();
-            _mergeRedDot ??= SkillBarController.FindDescendant(merge, "Icon_RedDot")?.gameObject;
+            if (mergeAllButton != null) mergeAllButton.interactable = canMerge;
+            if (mergeRedDot != null) mergeRedDot.SetActive(canMerge);
         }
 
         private void BindButtons()
         {
-            if (_equipButton != null)
+            if (equipButton != null)
             {
-                if (_equipAction != null) _equipButton.onClick.RemoveListener(_equipAction);
+                if (_equipAction != null) equipButton.onClick.RemoveListener(_equipAction);
                 _equipAction = EquipSelected;
-                _equipButton.onClick.AddListener(_equipAction);
+                equipButton.onClick.AddListener(_equipAction);
             }
-            if (_mergeAllButton != null)
+            if (mergeAllButton != null)
             {
-                if (_mergeAction != null) _mergeAllButton.onClick.RemoveListener(_mergeAction);
+                if (_mergeAction != null) mergeAllButton.onClick.RemoveListener(_mergeAction);
                 _mergeAction = MergeAll;
-                _mergeAllButton.onClick.AddListener(_mergeAction);
+                mergeAllButton.onClick.AddListener(_mergeAction);
             }
-        }
-
-        private static T Find<T>(Transform root, string name) where T : Component =>
-            SkillBarController.FindDescendant(root, name)?.GetComponent<T>();
-
-        private void FindTotalEffectText(Transform section, string cardName, EquipmentEffectType type)
-        {
-            if (_totalEffectTexts.ContainsKey(type))
-                return;
-            Transform card = SkillBarController.FindDescendant(section, cardName);
-            TMP_Text value = Find<TMP_Text>(card, "ValueText");
-            if (value != null) _totalEffectTexts[type] = value;
         }
 
         private void OnDestroy()
         {
             if (_battle != null) _battle.StateChanged -= Refresh;
-            if (_equipButton != null && _equipAction != null) _equipButton.onClick.RemoveListener(_equipAction);
-            if (_mergeAllButton != null && _mergeAction != null) _mergeAllButton.onClick.RemoveListener(_mergeAction);
+            if (equipButton != null && _equipAction != null) equipButton.onClick.RemoveListener(_equipAction);
+            if (mergeAllButton != null && _mergeAction != null) mergeAllButton.onClick.RemoveListener(_mergeAction);
         }
     }
 }
