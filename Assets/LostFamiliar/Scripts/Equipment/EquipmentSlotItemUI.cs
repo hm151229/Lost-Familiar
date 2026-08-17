@@ -22,8 +22,6 @@ namespace LostFamiliar.Battle
 
         private void OnEnable()
         {
-            if (_battle == null && Application.isPlaying)
-                BindBattle(FindFirstObjectByType<MainBattleLoop>());
             Refresh();
         }
 

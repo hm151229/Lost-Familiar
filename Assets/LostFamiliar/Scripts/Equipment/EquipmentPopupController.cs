@@ -21,14 +21,48 @@ namespace LostFamiliar.Battle
         [SerializeField, Range(0f, 15f)] private float characterBreathMoveAmount = .6f;
         [SerializeField, Range(0f, 2f)] private float characterSwayAngle = .35f;
 
+        [Header("References")]
+        [SerializeField] private Transform inventoryContent;
+
+        [Header("Currency")]
+        [SerializeField] private TMP_Text goldText;
+        [SerializeField] private TMP_Text gemText;
+
+        [Header("Actions")]
+        [SerializeField] private Button mergeAllButton;
+        [SerializeField] private Button autoEquipButton;
+        [SerializeField] private Button closeButton;
+        [SerializeField] private GameObject mergeAllRedDot;
+        [SerializeField] private GameObject autoEquipRedDot;
+
+        [Header("Category Tabs")]
+        [SerializeField] private Button weaponTabButton;
+        [SerializeField] private Button headTabButton;
+        [SerializeField] private Button bodyTabButton;
+        [SerializeField] private Button accessoryTabButton;
+        [SerializeField] private Button shoesTabButton;
+        [SerializeField] private GameObject weaponTabRedDot;
+        [SerializeField] private GameObject headTabRedDot;
+        [SerializeField] private GameObject bodyTabRedDot;
+        [SerializeField] private GameObject accessoryTabRedDot;
+        [SerializeField] private GameObject shoesTabRedDot;
+
+        [Header("Equipped Slots")]
+        [SerializeField] private EquipmentSlotItemUI weaponSlot;
+        [SerializeField] private EquipmentSlotItemUI headSlot;
+        [SerializeField] private EquipmentSlotItemUI bodySlot;
+        [SerializeField] private EquipmentSlotItemUI shoesSlot;
+        [SerializeField] private EquipmentSlotItemUI accessorySlot1;
+        [SerializeField] private EquipmentSlotItemUI accessorySlot2;
+
+        [Header("Stats")]
+        [SerializeField] private TMP_Text attackStatText;
+        [SerializeField] private TMP_Text criticalRateStatText;
+        [SerializeField] private TMP_Text criticalDamageStatText;
+        [SerializeField] private TMP_Text skillDamageStatText;
+        [SerializeField] private TMP_Text bossDamageStatText;
+
         private MainBattleLoop _battle;
-        private Transform _equippedRoot;
-        private Transform _inventoryContent;
-        private Transform _statPanel;
-        private TMP_Text _goldText;
-        private TMP_Text _gemText;
-        private GameObject _mergeAllRedDot;
-        private GameObject _autoEquipRedDot;
         private readonly List<EquipmentSlotItemUI> _inventorySlots = new List<EquipmentSlotItemUI>();
         private readonly Dictionary<Filter, Button> _tabButtons = new Dictionary<Filter, Button>();
         private readonly Dictionary<Filter, GameObject> _tabRedDots = new Dictionary<Filter, GameObject>();
@@ -42,8 +76,10 @@ namespace LostFamiliar.Battle
 
         private void Awake()
         {
-            FindReferences();
+            CacheCharacterStandBase();
+            BuildTabLookup();
             BindListeners();
+            CacheInventorySlots();
         }
 
         private void OnEnable()
@@ -59,13 +95,15 @@ namespace LostFamiliar.Battle
 
         public void RefreshNow()
         {
-            FindReferences();
             BindListeners();
-            MainBattleLoop battle = FindFirstObjectByType<MainBattleLoop>();
-            if (_battle != battle || _battle?.EquipmentInventory == null)
-                BindBattle(battle);
             RefreshAll();
             _refreshPending = true;
+        }
+
+        public void Bind(MainBattleLoop battle)
+        {
+            BindBattle(battle);
+            RefreshAll();
         }
 
         private void BindBattle(MainBattleLoop battle)
@@ -79,56 +117,27 @@ namespace LostFamiliar.Battle
                 _battle.StateChanged += RefreshAll;
         }
 
-        private void FindReferences()
+        private void BuildTabLookup()
         {
-            if (characterStand == null)
-                characterStand = FindDescendant("CharacterStand") as RectTransform;
-            CacheCharacterStandBase();
-            _equippedRoot ??= FindDescendant("EquipSlotGroup");
-            _statPanel ??= FindDescendant("StatPanel");
-            Transform inventory = FindDescendant("Inventory");
-            if (_inventoryContent == null && inventory != null)
-                _inventoryContent = FindDescendant(inventory, "Content");
+            _tabButtons.Clear();
+            _tabRedDots.Clear();
 
-            Transform header = FindDescendant("Header");
-            Transform goldPanel = FindDescendant(header, "GoldPanel");
-            Transform gemPanel = FindDescendant(header, "GemPanel");
-            _goldText ??= GetChild<TMP_Text>(goldPanel, "AmountText");
-            _gemText ??= GetChild<TMP_Text>(gemPanel, "AmountText");
-
-            Transform mergeButton = FindDescendant("Btn_MergeAll");
-            Transform autoEquipButton = FindDescendant("Btn_AutoEquip");
-            _mergeAllRedDot ??= FindDescendant(mergeButton, "Icon_RedDot")?.gameObject;
-            _autoEquipRedDot ??= FindDescendant(autoEquipButton, "Icon_RedDot")?.gameObject;
-            if (_battle == null)
-            {
-                SetActive(_mergeAllRedDot, false);
-                SetActive(_autoEquipRedDot, false);
-            }
-
-            RegisterTab(Filter.Weapon, "Btn_Weapon");
-            RegisterTab(Filter.Head, "Btn_Hat");
-            RegisterTab(Filter.Body, "Btn_Armor");
-            RegisterTab(Filter.Accessory, "Btn_Accessory");
-            RegisterTab(Filter.Shoes, "Btn_Boots");
+            RegisterTab(Filter.Weapon, weaponTabButton, weaponTabRedDot);
+            RegisterTab(Filter.Head, headTabButton, headTabRedDot);
+            RegisterTab(Filter.Body, bodyTabButton, bodyTabRedDot);
+            RegisterTab(Filter.Accessory, accessoryTabButton, accessoryTabRedDot);
+            RegisterTab(Filter.Shoes, shoesTabButton, shoesTabRedDot);
         }
 
-        private void RegisterTab(Filter filter, string name)
+        private void RegisterTab(Filter filter, Button button, GameObject redDot)
         {
-            if (!_tabButtons.ContainsKey(filter))
+            if (button != null)
+                _tabButtons[filter] = button;
+
+            if (redDot != null)
             {
-                Transform target = FindDescendant(name);
-                Button button = target != null ? target.GetComponent<Button>() : null;
-                if (button != null)
-                {
-                    _tabButtons.Add(filter, button);
-                    Transform redDot = FindDescendant(button.transform, "Icon_RedDot");
-                    if (redDot != null)
-                    {
-                        _tabRedDots[filter] = redDot.gameObject;
-                        SetActive(redDot.gameObject, false);
-                    }
-                }
+                _tabRedDots[filter] = redDot;
+                SetActive(redDot, false);
             }
         }
 
@@ -144,9 +153,9 @@ namespace LostFamiliar.Battle
                 pair.Value.onClick.AddListener(() => SelectFilter(captured));
             }
 
-            AddClick("Btn_MergeAll", UpgradeAll);
-            AddClick("Btn_AutoEquip", AutoEquip);
-            AddClick("Btn_Close", Close);
+            mergeAllButton?.onClick.AddListener(UpgradeAll);
+            autoEquipButton?.onClick.AddListener(AutoEquip);
+            closeButton?.onClick.AddListener(Close);
         }
 
         private void SelectFilter(Filter filter)
@@ -161,9 +170,9 @@ namespace LostFamiliar.Battle
         private void RefreshActionRedDots()
         {
             EquipmentInventory inventory = _battle?.EquipmentInventory;
-            SetActive(_mergeAllRedDot,
+            SetActive(mergeAllRedDot,
                 inventory != null && inventory.HasUpgradeableEquipment(GetSelectedEquipmentType()));
-            SetActive(_autoEquipRedDot,
+            SetActive(autoEquipRedDot,
                 inventory != null && inventory.CanAutoEquipBetter(GetSelectedEquipmentType()));
 
             foreach (KeyValuePair<Filter, GameObject> pair in _tabRedDots)
@@ -184,10 +193,10 @@ namespace LostFamiliar.Battle
         {
             if (_battle == null)
                 return;
-            if (_goldText != null)
-                _goldText.text = MainHUDController.FormatNumber(_battle.Gold);
-            if (_gemText != null)
-                _gemText.text = MainHUDController.FormatGem(_battle.Gems);
+            if (goldText != null)
+                goldText.text = MainHUDController.FormatNumber(_battle.Gold);
+            if (gemText != null)
+                gemText.text = MainHUDController.FormatGem(_battle.Gems);
         }
 
         private void UpgradeAll()
@@ -195,7 +204,7 @@ namespace LostFamiliar.Battle
             EquipmentInventory inventory = _battle?.EquipmentInventory;
             inventory?.TryUpgradeAll(GetSelectedEquipmentType());
             GameAudioManager.Instance.PlaySfx("SFX_Stat_Upgrade");
-            SetActive(_mergeAllRedDot, false);
+            SetActive(mergeAllRedDot, false);
             RefreshTabRedDot(_filter, inventory);
             Canvas.ForceUpdateCanvases();
             _refreshPending = true;
@@ -217,7 +226,7 @@ namespace LostFamiliar.Battle
         {
             EquipmentInventory inventory = _battle?.EquipmentInventory;
             inventory?.AutoEquipBest(GetSelectedEquipmentType());
-            SetActive(_autoEquipRedDot, false);
+            SetActive(autoEquipRedDot, false);
             RefreshTabRedDot(_filter, inventory);
             Canvas.ForceUpdateCanvases();
             _refreshPending = true;
@@ -226,9 +235,6 @@ namespace LostFamiliar.Battle
         private void LateUpdate()
         {
             UpdateCharacterStandMotion();
-
-            if (_battle == null)
-                BindBattle(FindFirstObjectByType<MainBattleLoop>());
 
             if (_refreshPending)
             {
@@ -306,27 +312,21 @@ namespace LostFamiliar.Battle
         private void RefreshEquippedSlots()
         {
             EquipmentInventory inventory = _battle?.EquipmentInventory;
-            if (_equippedRoot == null || inventory == null)
+            if (inventory == null)
                 return;
 
-            BindEquipped("Slot_Hat", EquipmentSlot.Head);
-            BindEquipped("Slot_Armor", EquipmentSlot.Body);
-            BindEquipped("Slot_Boots", EquipmentSlot.Shoes);
-            BindEquipped("Slot_Accessory01", EquipmentSlot.Accessory1);
-            BindEquipped("Slot_Accessory02", EquipmentSlot.Accessory2);
-            BindEquipped("Slot_Weapon", EquipmentSlot.Weapon);
+            BindEquipped(weaponSlot, EquipmentSlot.Weapon);
+            BindEquipped(headSlot, EquipmentSlot.Head);
+            BindEquipped(bodySlot, EquipmentSlot.Body);
+            BindEquipped(shoesSlot, EquipmentSlot.Shoes);
+            BindEquipped(accessorySlot1, EquipmentSlot.Accessory1);
+            BindEquipped(accessorySlot2, EquipmentSlot.Accessory2);
         }
 
-        private void BindEquipped(string objectName, EquipmentSlot equipmentSlot)
+        private void BindEquipped(EquipmentSlotItemUI ui, EquipmentSlot equipmentSlot)
         {
-            Transform target = FindDescendant(_equippedRoot, objectName);
-            EquipmentSlotItemUI ui = target != null ? target.GetComponent<EquipmentSlotItemUI>() : null;
-            if (target == null)
+            if (ui == null || _battle?.EquipmentInventory == null)
                 return;
-            if (target.GetComponent<InventorySlotView>() == null)
-                target.gameObject.AddComponent<InventorySlotView>();
-            if (ui == null)
-                ui = target.gameObject.AddComponent<EquipmentSlotItemUI>();
 
             string id = _battle.EquipmentInventory.GetEquippedId(equipmentSlot);
             EquipmentData data = _battle.EquipmentInventory.Database?.Get(id);
@@ -335,22 +335,19 @@ namespace LostFamiliar.Battle
 
         private void RefreshStats()
         {
-            if (_statPanel == null || _battle?.EquipmentInventory == null)
+            if (_battle?.EquipmentInventory == null)
                 return;
 
             EquipmentBonuses stats = _battle.EquipmentInventory.CalculateBonuses();
-            SetStat("Stat_Attack", stats.attackPercent);
-            SetStat("Stat_CriticalRate", stats.criticalChancePercentPoint);
-            SetStat("Stat_CriticalDamage", stats.criticalDamagePercent);
-            SetStat("Stat_SkillDamage", stats.skillDamagePercent);
-            SetStat("Stat_BossDamage", stats.bossDamagePercent);
+            SetStat(attackStatText, stats.attackPercent);
+            SetStat(criticalRateStatText, stats.criticalChancePercentPoint);
+            SetStat(criticalDamageStatText, stats.criticalDamagePercent);
+            SetStat(skillDamageStatText, stats.skillDamagePercent);
+            SetStat(bossDamageStatText, stats.bossDamagePercent);
         }
 
-        private void SetStat(string rowName, float value)
+        private static void SetStat(TMP_Text text, float value)
         {
-            Transform row = FindDescendant(_statPanel, rowName);
-            Transform valueObject = row != null ? FindDescendant(row, "ValueText") : null;
-            TMP_Text text = valueObject != null ? valueObject.GetComponent<TMP_Text>() : null;
             if (text != null)
                 text.text = $"{value:0.##}%";
         }
@@ -358,7 +355,7 @@ namespace LostFamiliar.Battle
         private void RefreshInventory()
         {
             EquipmentInventory inventory = _battle?.EquipmentInventory;
-            if (_inventoryContent == null || inventory?.Database?.items == null)
+            if (inventoryContent == null || inventory?.Database?.items == null)
                 return;
 
             CacheInventorySlots();
@@ -406,17 +403,13 @@ namespace LostFamiliar.Battle
 
         private void CacheInventorySlots()
         {
-            if (_inventorySlots.Count > 0)
+            if (_inventorySlots.Count > 0 || inventoryContent == null)
                 return;
-            foreach (Transform child in _inventoryContent)
+            foreach (Transform child in inventoryContent)
             {
-                InventorySlotView view = child.GetComponent<InventorySlotView>();
-                if (view == null)
-                    view = child.gameObject.AddComponent<InventorySlotView>();
                 EquipmentSlotItemUI item = child.GetComponent<EquipmentSlotItemUI>();
-                if (item == null)
-                    item = child.gameObject.AddComponent<EquipmentSlotItemUI>();
-                _inventorySlots.Add(item);
+                if (item != null)
+                    _inventorySlots.Add(item);
             }
         }
 
@@ -427,7 +420,7 @@ namespace LostFamiliar.Battle
             EquipmentSlotItemUI template = _inventorySlots[0];
             while (_inventorySlots.Count < count)
             {
-                EquipmentSlotItemUI clone = Instantiate(template, _inventoryContent);
+                EquipmentSlotItemUI clone = Instantiate(template, inventoryContent);
                 clone.name = $"InventorySlot ({_inventorySlots.Count})";
                 _inventorySlots.Add(clone);
             }
@@ -450,31 +443,6 @@ namespace LostFamiliar.Battle
         {
             if (target != null && target.activeSelf != active)
                 target.SetActive(active);
-        }
-
-        private void AddClick(string objectName, UnityEngine.Events.UnityAction action)
-        {
-            Transform target = FindDescendant(objectName);
-            Button button = target != null ? target.GetComponent<Button>() : null;
-            button?.onClick.AddListener(action);
-        }
-
-        private Transform FindDescendant(string objectName) => FindDescendant(transform, objectName);
-
-        private static Transform FindDescendant(Transform root, string objectName)
-        {
-            if (root == null)
-                return null;
-            foreach (Transform child in root.GetComponentsInChildren<Transform>(true))
-                if (child.name == objectName)
-                    return child;
-            return null;
-        }
-
-        private static T GetChild<T>(Transform root, string objectName) where T : Component
-        {
-            Transform child = FindDescendant(root, objectName);
-            return child != null ? child.GetComponent<T>() : null;
         }
 
         private void OnDestroy()

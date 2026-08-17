@@ -20,8 +20,6 @@ namespace LostFamiliar.Battle
         [SerializeField] private Image progressFill;
         [SerializeField] private TMP_Text progressText;
 
-        private void Awake() => AutoFindReferences();
-
         public void Render(
             Sprite icon,
             Color rarityColor,
@@ -34,8 +32,6 @@ namespace LostFamiliar.Battle
             bool canUpgrade,
             bool isEquipped)
         {
-            AutoFindReferences();
-
             if (backgroundImage != null)
                 backgroundImage.color = rarityColor;
             if (iconImage != null)
