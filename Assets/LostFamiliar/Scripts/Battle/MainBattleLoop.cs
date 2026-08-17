@@ -748,13 +748,7 @@ namespace LostFamiliar.Battle
 
         public TowerProgressData GetTowerProgress(TowerType type)
         {
-            if (TowerSystem == null)
-                return null;
-
-            if (TowerSystem.RefreshDailyTickets())
-                Save();
-
-            return TowerSystem.GetProgress(type);
+            return TowerSystem?.GetProgress(type);
         }
 
         public bool RefreshDailyTowerTickets()
@@ -763,9 +757,12 @@ namespace LostFamiliar.Battle
                 return false;
 
             bool changed = TowerSystem.RefreshDailyTickets();
-            if (changed)
-                Save();
-            return changed;
+            if (!changed)
+                return false;
+
+            Save();
+            NotifyStateChanged();
+            return true;
         }
 
         public bool TryBeginTowerRun(TowerType type, int floor, out TowerRunSetup setup)

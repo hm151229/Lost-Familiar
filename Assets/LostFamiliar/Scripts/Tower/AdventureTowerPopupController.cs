@@ -100,12 +100,15 @@ namespace LostFamiliar.Battle
         private void OnEnable()
         {
             _towerLoading = false;
-            if (_battle != null)
-            {
-                TowerProgressData progress = _battle.GetTowerProgress(_selectedType);
-                _selectedFloor = progress != null ? progress.highestUnlockedFloor : 1;
-                Refresh();
-            }
+
+            if (_battle == null)
+                return;
+
+            _battle.RefreshDailyTowerTickets();
+
+            TowerProgressData progress = _battle.GetTowerProgress(_selectedType);
+            _selectedFloor = progress != null ? progress.highestUnlockedFloor : 1;
+            Refresh();
         }
 
         private void OnDisable() => CloseResultPopup();

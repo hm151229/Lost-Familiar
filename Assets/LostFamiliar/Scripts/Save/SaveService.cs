@@ -6,21 +6,37 @@ namespace LostFamiliar.Core
     public static class SaveService
     {
         private const string Key = "LostFamiliar.Save.v1";
+
         public static GameSaveData Load()
         {
-            if (!PlayerPrefs.HasKey(Key)) return new GameSaveData();
+            if (!PlayerPrefs.HasKey(Key))
+                return new GameSaveData();
+
             try
             {
-                GameSaveData data = JsonUtility.FromJson<GameSaveData>(PlayerPrefs.GetString(Key)) ?? new GameSaveData();
+                string json = PlayerPrefs.GetString(Key);
+                GameSaveData data =
+                    JsonUtility.FromJson<GameSaveData>(json)
+                    ?? new GameSaveData();
+
                 data.Normalize();
                 return data;
             }
-            catch (Exception) { return new GameSaveData(); }
+            catch (Exception exception)
+            {
+                Debug.LogWarning(
+                    $"Save data load failed. A new save will be used.\n{exception}");
+
+                return new GameSaveData();
+            }
         }
 
         public static void Save(GameSaveData data)
         {
-            PlayerPrefs.SetString(Key, JsonUtility.ToJson(data));
+            PlayerPrefs.SetString(
+                Key,
+                JsonUtility.ToJson(data));
+
             PlayerPrefs.Save();
         }
 
