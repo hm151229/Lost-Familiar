@@ -11930,6 +11930,7 @@ GameObject:
   - component: {fileID: 561626441}
   - component: {fileID: 561626440}
   - component: {fileID: 561626439}
+  - component: {fileID: 561626442}
   m_Layer: 5
   m_Name: Btn_AutoSweep
   m_TagString: Untagged
@@ -12040,6 +12041,18 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 561626437}
   m_CullTransparentMesh: 1
+--- !u!114 &561626442
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 561626437}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 2062320789}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!1 &562450831
 GameObject:
   m_ObjectHideFlags: 0
@@ -20145,6 +20158,32 @@ MonoBehaviour:
   gemTowerPreview: {fileID: 21300000, guid: d3eebbd24f1a2a6489e4f845fbabfdd7, type: 3}
   goldRewardIcon: {fileID: 21300000, guid: c7cbaefabf1ece84a87329fc6b719100, type: 3}
   gemRewardIcon: {fileID: 21300000, guid: b02364e4cb7fd0244a5c7a08d202066b, type: 3}
+  goldTab: {fileID: 609638481}
+  gemTab: {fileID: 574776081}
+  leftButton: {fileID: 2033050991}
+  rightButton: {fileID: 1296074950}
+  levelText: {fileID: 2131640094}
+  ticketIcon: {fileID: 1436243114}
+  ticketCountText: {fileID: 1999857144}
+  previewImage: {fileID: 2035966349}
+  towerNameText: {fileID: 467439525}
+  descriptionText: {fileID: 2087305892}
+  recordTimeText: {fileID: 1555626110}
+  gradeText: {fileID: 360188413}
+  rewardIcon: {fileID: 19662096}
+  rewardAmountText: {fileID: 1710353116}
+  goldText: {fileID: 1944803996}
+  gemText: {fileID: 1796876480}
+  sweepButton: {fileID: 561626439}
+  autoSweepLock: {fileID: 280126339}
+  sweepButtonAudio: {fileID: 561626442}
+  challengeButton: {fileID: 1157995817}
+  closeButton: {fileID: 1670312193}
+  resultPopup: {fileID: 973787428}
+  resultRewardIcon: {fileID: 535290993}
+  resultRewardAmountText: {fileID: 9616564}
+  resultCloseButton: {fileID: 973787430}
+  resultBackground: {fileID: 1109307710}
 --- !u!1 &904919886
 GameObject:
   m_ObjectHideFlags: 0
@@ -21560,6 +21599,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 973787429}
+  - component: {fileID: 973787430}
   m_Layer: 5
   m_Name: ResultPopup
   m_TagString: Untagged
@@ -21589,6 +21629,50 @@ RectTransform:
   m_AnchoredPosition: {x: 0, y: 0}
   m_SizeDelta: {x: 0, y: 0}
   m_Pivot: {x: 0.5, y: 0.5}
+--- !u!114 &973787430
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 973787428}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4e29b1a8efbd4b44bb3f3716e73f07ff, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  m_Navigation:
+    m_Mode: 3
+    m_WrapAround: 0
+    m_SelectOnUp: {fileID: 0}
+    m_SelectOnDown: {fileID: 0}
+    m_SelectOnLeft: {fileID: 0}
+    m_SelectOnRight: {fileID: 0}
+  m_Transition: 0
+  m_Colors:
+    m_NormalColor: {r: 1, g: 1, b: 1, a: 1}
+    m_HighlightedColor: {r: 0.9607843, g: 0.9607843, b: 0.9607843, a: 1}
+    m_PressedColor: {r: 0.78431374, g: 0.78431374, b: 0.78431374, a: 1}
+    m_SelectedColor: {r: 0.9607843, g: 0.9607843, b: 0.9607843, a: 1}
+    m_DisabledColor: {r: 0.78431374, g: 0.78431374, b: 0.78431374, a: 0.5019608}
+    m_ColorMultiplier: 1
+    m_FadeDuration: 0.1
+  m_SpriteState:
+    m_HighlightedSprite: {fileID: 0}
+    m_PressedSprite: {fileID: 0}
+    m_SelectedSprite: {fileID: 0}
+    m_DisabledSprite: {fileID: 0}
+  m_AnimationTriggers:
+    m_NormalTrigger: Normal
+    m_HighlightedTrigger: Highlighted
+    m_PressedTrigger: Pressed
+    m_SelectedTrigger: Selected
+    m_DisabledTrigger: Disabled
+  m_Interactable: 1
+  m_TargetGraphic: {fileID: 0}
+  m_OnClick:
+    m_PersistentCalls:
+      m_Calls: []
 --- !u!1 &983547965
 GameObject:
   m_ObjectHideFlags: 0
@@ -36876,6 +36960,7 @@ MonoBehaviour:
   gachaPopup: {fileID: 1997582073}
   upgradePopup: {fileID: 2147000001}
   skillBar: {fileID: 1373095788}
+  adventureTowerPopup: {fileID: 900000001}
   bossPlayerPosition: {x: -1.35, y: -0.8, z: 0}
   bossSpawnDistance: 2.8
 --- !u!1001 &1582422707
@@ -47765,6 +47850,21 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 2057472651}
   m_CullTransparentMesh: 1
+--- !u!115 &2062320789
+MonoScript:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_Name: 
+  serializedVersion: 7
+  m_DefaultReferences: {}
+  m_Icon: {fileID: 0}
+  m_Type: 0
+  m_ExecutionOrder: 0
+  m_ClassName: GlobalButtonAudio
+  m_Namespace: LostFamiliar.Core
+  m_AssemblyName: Assembly-CSharp
 --- !u!1 &2065100908
 GameObject:
   m_ObjectHideFlags: 0

@@ -18,62 +18,83 @@ namespace LostFamiliar.Battle
         [SerializeField] private Sprite goldRewardIcon;
         [SerializeField] private Sprite gemRewardIcon;
 
+        [Header("탭")]
+        [SerializeField] private Button goldTab;
+        [SerializeField] private Button gemTab;
+
+        [Header("층 선택")]
+        [SerializeField] private Button leftButton;
+        [SerializeField] private Button rightButton;
+        [SerializeField] private TMP_Text levelText;
+
+        [Header("탑 정보")]
+        [SerializeField] private Image ticketIcon;
+        [SerializeField] private TMP_Text ticketCountText;
+        [SerializeField] private Image previewImage;
+        [SerializeField] private TMP_Text towerNameText;
+        [SerializeField] private TMP_Text descriptionText;
+        [SerializeField] private TMP_Text recordTimeText;
+        [SerializeField] private TMP_Text gradeText;
+
+        [Header("보상")]
+        [SerializeField] private Image rewardIcon;
+        [SerializeField] private TMP_Text rewardAmountText;
+
+        [Header("재화")]
+        [SerializeField] private TMP_Text goldText;
+        [SerializeField] private TMP_Text gemText;
+
+        [Header("액션")]
+        [SerializeField] private Button sweepButton;
+        [SerializeField] private GameObject autoSweepLock;
+        [SerializeField] private GlobalButtonAudio sweepButtonAudio;
+        [SerializeField] private Button challengeButton;
+        [SerializeField] private Button closeButton;
+
+        [Header("소탕 결과")]
+        [SerializeField] private GameObject resultPopup;
+        [SerializeField] private Image resultRewardIcon;
+        [SerializeField] private TMP_Text resultRewardAmountText;
+        [SerializeField] private Button resultCloseButton;
+        [SerializeField] private RectTransform resultBackground;
+
         private MainBattleLoop _battle;
 
         public Sprite GoldTicketIcon => goldTicketIcon;
         public Sprite GemTicketIcon => gemTicketIcon;
         private TowerType _selectedType = TowerType.Gold;
         private int _selectedFloor = 1;
-        private Button _goldTab;
-        private Button _gemTab;
-        private Button _leftButton;
-        private Button _rightButton;
-        private Button _sweepButton;
-        private Button _challengeButton;
-        private Button _closeButton;
-        private GameObject _autoSweepLock;
-        private Image _ticketIcon;
-        private Image _previewImage;
-        private Image _rewardIcon;
-        private TMP_Text _ticketCountText;
-        private TMP_Text _towerNameText;
-        private TMP_Text _descriptionText;
-        private TMP_Text _levelText;
-        private TMP_Text _recordTimeText;
-        private TMP_Text _gradeText;
-        private TMP_Text _rewardAmountText;
-        private TMP_Text _goldText;
-        private TMP_Text _gemText;
-        private GameObject _resultPopup;
-        private Image _resultRewardIcon;
-        private TMP_Text _resultRewardAmountText;
-        private Button _resultCloseButton;
-        private RectTransform _resultBackground;
         private Vector3 _resultBackgroundBaseScale = Vector3.one;
         private Coroutine _resultOpenRoutine;
         private bool _towerLoading;
         private Color _goldTowerNameColor = Color.white;
-        private bool _towerNameColorCached;
-
-        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
-        private static void Install()
-        {
-            GameObject popup = SkillBarController.FindSceneObject("AdventurePopup");
-            if (popup == null) return;
-            AdventureTowerPopupController controller = popup.GetComponent<AdventureTowerPopupController>();
-            if (controller == null) controller = popup.AddComponent<AdventureTowerPopupController>();
-            controller.Bind(Object.FindFirstObjectByType<MainBattleLoop>());
-        }
 
         private void Awake()
         {
-            FindReferences();
+            CacheInitialVisualState();
+            BindButtons();
             SetResultPopupVisible(false);
         }
 
-        private void Start()
+        private void CacheInitialVisualState()
         {
-            if (_battle == null) Bind(Object.FindFirstObjectByType<MainBattleLoop>());
+            if (towerNameText != null)
+                _goldTowerNameColor = towerNameText.color;
+
+            if (resultBackground != null)
+                _resultBackgroundBaseScale = resultBackground.localScale;
+        }
+
+        private void BindButtons()
+        {
+            ReplaceClick(goldTab, () => SelectTower(TowerType.Gold));
+            ReplaceClick(gemTab, () => SelectTower(TowerType.Gem));
+            ReplaceClick(leftButton, () => ChangeFloor(-1));
+            ReplaceClick(rightButton, () => ChangeFloor(1));
+            ReplaceClick(sweepButton, Sweep);
+            ReplaceClick(challengeButton, Challenge);
+            ReplaceClick(closeButton, Close);
+            ReplaceClick(resultCloseButton, CloseResultPopup);
         }
 
         private void OnEnable()
@@ -94,67 +115,7 @@ namespace LostFamiliar.Battle
             if (_battle != null) _battle.StateChanged -= Refresh;
             _battle = battle;
             if (_battle != null) _battle.StateChanged += Refresh;
-            FindReferences();
             SelectTower(_selectedType);
-        }
-
-        private void FindReferences()
-        {
-            Transform root = transform;
-            _goldTab = Find<Button>(root, "GoldTowerTab");
-            _gemTab = Find<Button>(root, "GemTowerTab");
-            _leftButton = Find<Button>(root, "Btn_Left");
-            _rightButton = Find<Button>(root, "Btn_Right");
-            _sweepButton = Find<Button>(root, "Btn_AutoSweep");
-            _autoSweepLock = FindTransform(_sweepButton != null ? _sweepButton.transform : null, "Lock")?.gameObject;
-            _challengeButton = Find<Button>(root, "Btn_Challenge");
-            _closeButton = Find<Button>(root, "Btn_Close");
-            _ticketIcon = Find<Image>(root, "Icon_Ticket");
-            _previewImage = Find<Image>(root, "TowerPreviewPanel");
-            _ticketCountText = Find<TMP_Text>(FindTransform(root, "TicketInfo"), "CountText");
-            _towerNameText = Find<TMP_Text>(FindTransform(root, "TowerDescription"), "TowerNameText");
-            if (_towerNameText != null && !_towerNameColorCached)
-            {
-                _goldTowerNameColor = _towerNameText.color;
-                _towerNameColorCached = true;
-            }
-            _descriptionText = Find<TMP_Text>(FindTransform(root, "TowerDescription"), "DescriptionText");
-            _levelText = Find<TMP_Text>(FindTransform(root, "LevelSelector"), "LevelText");
-            _recordTimeText = Find<TMP_Text>(FindTransform(root, "RecordPanel"), "RecordTimeText");
-            _gradeText = Find<TMP_Text>(FindTransform(root, "RecordPanel"), "GradeText");
-            Transform reward = FindTransform(root, "RewardItem");
-            _rewardIcon = Find<Image>(reward, "IconImage");
-            _rewardAmountText = Find<TMP_Text>(reward, "AmountText");
-            Transform header = FindTransform(root, "Header");
-            Transform currencyGroup = FindTransform(header, "CurrencyGroup");
-            _goldText = Find<TMP_Text>(FindTransform(currencyGroup, "GoldPanel"), "AmountText");
-            _gemText = Find<TMP_Text>(FindTransform(currencyGroup, "GemPanel"), "AmountText");
-
-            Transform resultPopup = FindTransform(root, "ResultPopup");
-            _resultPopup = resultPopup != null ? resultPopup.gameObject : null;
-            Transform resultReward = FindTransform(resultPopup, "RewardItem");
-            _resultRewardIcon = Find<Image>(resultReward, "IconImage");
-            _resultRewardAmountText = Find<TMP_Text>(resultReward, "AmountText");
-            Transform resultBackground = FindTransform(resultPopup, "BG");
-            _resultBackground = resultBackground as RectTransform;
-            if (_resultBackground != null)
-                _resultBackgroundBaseScale = _resultBackground.localScale;
-            if (resultPopup != null)
-            {
-                _resultCloseButton = resultPopup.GetComponent<Button>() ??
-                                     resultPopup.gameObject.AddComponent<Button>();
-                _resultCloseButton.transition = Selectable.Transition.None;
-                _resultCloseButton.targetGraphic = null;
-            }
-
-            ReplaceClick(_goldTab, () => SelectTower(TowerType.Gold));
-            ReplaceClick(_gemTab, () => SelectTower(TowerType.Gem));
-            ReplaceClick(_leftButton, () => ChangeFloor(-1));
-            ReplaceClick(_rightButton, () => ChangeFloor(1));
-            ReplaceClick(_sweepButton, Sweep);
-            ReplaceClick(_challengeButton, Challenge);
-            ReplaceClick(_closeButton, Close);
-            ReplaceClick(_resultCloseButton, CloseResultPopup);
         }
 
         private void SelectTower(TowerType type)
@@ -183,54 +144,51 @@ namespace LostFamiliar.Battle
             _selectedFloor = Mathf.Clamp(_selectedFloor, 1, progress.highestUnlockedFloor);
             bool gold = _selectedType == TowerType.Gold;
 
-            if (_ticketIcon != null) _ticketIcon.sprite = gold ? goldTicketIcon : gemTicketIcon;
-            if (_previewImage != null) _previewImage.sprite = gold ? goldTowerPreview : gemTowerPreview;
-            if (_ticketCountText != null) _ticketCountText.text = $"{progress.tickets}/{TowerBalance.DailyTickets}";
-            if (_goldText != null) _goldText.text = MainHUDController.FormatNumber(_battle.Gold);
-            if (_gemText != null) _gemText.text = _battle.Gems.ToString();
-            if (_towerNameText != null)
+            if (ticketIcon != null) ticketIcon.sprite = gold ? goldTicketIcon : gemTicketIcon;
+            if (previewImage != null) previewImage.sprite = gold ? goldTowerPreview : gemTowerPreview;
+            if (ticketCountText != null) ticketCountText.text = $"{progress.tickets}/{TowerBalance.DailyTickets}";
+            if (goldText != null) goldText.text = MainHUDController.FormatNumber(_battle.Gold);
+            if (gemText != null) gemText.text = _battle.Gems.ToString();
+            if (towerNameText != null)
             {
-                _towerNameText.text = gold ? "골드의 탑" : "보석의 탑";
-                _towerNameText.color = gold
+                towerNameText.text = gold ? "골드의 탑" : "보석의 탑";
+                towerNameText.color = gold
                     ? _goldTowerNameColor
                     : new Color32(0xB1, 0xB2, 0xFF, 0xFF);
             }
-            if (_descriptionText != null) _descriptionText.text = gold
+            if (descriptionText != null) descriptionText.text = gold
                 ? "황금의 마력이 깃든 탑입니다.\n골드를 대량으로 획득할 수 있습니다."
                 : "신비로운 마력이 깃든 탑입니다.\n보석을 대량으로 획득할 수 있습니다.";
-            if (_levelText != null) _levelText.text = $"Lv.{_selectedFloor}";
+            if (levelText != null) levelText.text = $"Lv.{_selectedFloor}";
 
             TowerGrade grade = progress.GetBestGrade(_selectedFloor);
             float clearTime = progress.GetBestClearTime(_selectedFloor);
             bool cleared = grade != TowerGrade.F;
-            if (_autoSweepLock != null)
-                _autoSweepLock.SetActive(!cleared || grade < TowerGrade.A);
-            if (_sweepButton != null)
+            if (autoSweepLock != null)
+                autoSweepLock.SetActive(!cleared || grade < TowerGrade.A);
+            if (sweepButtonAudio != null)
             {
-                GlobalButtonAudio sweepAudio =
-                    _sweepButton.GetComponent<GlobalButtonAudio>() ??
-                    _sweepButton.gameObject.AddComponent<GlobalButtonAudio>();
-                sweepAudio.SetLogicalLocked(
+                sweepButtonAudio.SetLogicalLocked(
                     progress.tickets <= 0 || !cleared || grade < TowerGrade.A);
             }
-            if (_recordTimeText != null) _recordTimeText.text = clearTime >= 0f ? $"Time {clearTime:00.0}초" : "Time --.-";
-            if (_gradeText != null) _gradeText.text = cleared ? grade.ToString() : "-";
+            if (recordTimeText != null) recordTimeText.text = clearTime >= 0f ? $"Time {clearTime:00.0}초" : "Time --.-";
+            if (gradeText != null) gradeText.text = cleared ? grade.ToString() : "-";
 
-            if (_rewardIcon != null) _rewardIcon.sprite = gold
+            if (rewardIcon != null) rewardIcon.sprite = gold
                 ? (goldRewardIcon != null ? goldRewardIcon : goldTicketIcon)
                 : (gemRewardIcon != null ? gemRewardIcon : gemTicketIcon);
-            if (_rewardAmountText != null) _rewardAmountText.text = gold
+            if (rewardAmountText != null) rewardAmountText.text = gold
                 ? MainHUDController.FormatNumber(TowerBalance.BaseGoldReward(_selectedFloor))
                 : TowerBalance.BaseGemReward(_selectedFloor).ToString();
 
             // AdventurePopup buttons always keep their normal visual state. Availability is
             // checked inside each click handler instead of using Button.interactable=false.
-            if (_leftButton != null) _leftButton.interactable = true;
-            if (_rightButton != null) _rightButton.interactable = true;
-            if (_sweepButton != null) _sweepButton.interactable = true;
-            if (_challengeButton != null) _challengeButton.interactable = true;
-            if (_goldTab != null) _goldTab.interactable = true;
-            if (_gemTab != null) _gemTab.interactable = true;
+            if (leftButton != null) leftButton.interactable = true;
+            if (rightButton != null) rightButton.interactable = true;
+            if (sweepButton != null) sweepButton.interactable = true;
+            if (challengeButton != null) challengeButton.interactable = true;
+            if (goldTab != null) goldTab.interactable = true;
+            if (gemTab != null) gemTab.interactable = true;
         }
 
         private void Sweep()
@@ -249,12 +207,12 @@ namespace LostFamiliar.Battle
         private void ShowSweepResult(TowerRunResult result)
         {
             bool gold = result.type == TowerType.Gold;
-            if (_resultRewardIcon != null)
-                _resultRewardIcon.sprite = gold
+            if (resultRewardIcon != null)
+                resultRewardIcon.sprite = gold
                     ? (goldRewardIcon != null ? goldRewardIcon : goldTicketIcon)
                     : (gemRewardIcon != null ? gemRewardIcon : gemTicketIcon);
-            if (_resultRewardAmountText != null)
-                _resultRewardAmountText.text = gold
+            if (resultRewardAmountText != null)
+                resultRewardAmountText.text = gold
                     ? MainHUDController.FormatNumber(result.goldReward)
                     : result.gemReward.ToString();
 
@@ -267,20 +225,20 @@ namespace LostFamiliar.Battle
 
         private IEnumerator AnimateResultPopupOpen()
         {
-            if (_resultBackground == null)
+            if (resultBackground == null)
                 yield break;
 
             const float growDuration = .18f;
             const float settleDuration = .1f;
             Vector3 startScale = _resultBackgroundBaseScale * .82f;
             Vector3 overshootScale = _resultBackgroundBaseScale * 1.055f;
-            _resultBackground.localScale = startScale;
+            resultBackground.localScale = startScale;
 
             for (float elapsed = 0f; elapsed < growDuration; elapsed += Time.unscaledDeltaTime)
             {
                 float progress = Mathf.Clamp01(elapsed / growDuration);
                 progress = 1f - Mathf.Pow(1f - progress, 3f);
-                _resultBackground.localScale = Vector3.LerpUnclamped(
+                resultBackground.localScale = Vector3.LerpUnclamped(
                     startScale, overshootScale, progress);
                 yield return null;
             }
@@ -288,18 +246,18 @@ namespace LostFamiliar.Battle
             for (float elapsed = 0f; elapsed < settleDuration; elapsed += Time.unscaledDeltaTime)
             {
                 float progress = Mathf.SmoothStep(0f, 1f, elapsed / settleDuration);
-                _resultBackground.localScale = Vector3.LerpUnclamped(
+                resultBackground.localScale = Vector3.LerpUnclamped(
                     overshootScale, _resultBackgroundBaseScale, progress);
                 yield return null;
             }
 
-            _resultBackground.localScale = _resultBackgroundBaseScale;
+            resultBackground.localScale = _resultBackgroundBaseScale;
             _resultOpenRoutine = null;
         }
 
         private void CloseResultPopup()
         {
-            bool wasVisible = _resultPopup != null && _resultPopup.activeSelf;
+            bool wasVisible = resultPopup != null && resultPopup.activeSelf;
             SetResultPopupVisible(false);
             if (wasVisible)
                 GameAudioManager.Instance.PlayBgm("BGM_MainBattle");
@@ -307,7 +265,7 @@ namespace LostFamiliar.Battle
 
         private void SetResultPopupVisible(bool visible)
         {
-            if (_resultPopup == null) return;
+            if (resultPopup == null) return;
             if (!visible)
             {
                 if (_resultOpenRoutine != null)
@@ -315,12 +273,12 @@ namespace LostFamiliar.Battle
                     StopCoroutine(_resultOpenRoutine);
                     _resultOpenRoutine = null;
                 }
-                if (_resultBackground != null)
-                    _resultBackground.localScale = _resultBackgroundBaseScale;
+                if (resultBackground != null)
+                    resultBackground.localScale = _resultBackgroundBaseScale;
             }
             if (visible)
-                _resultPopup.transform.SetAsLastSibling();
-            _resultPopup.SetActive(visible);
+                resultPopup.transform.SetAsLastSibling();
+            resultPopup.SetActive(visible);
         }
 
         private void Challenge()
@@ -342,20 +300,6 @@ namespace LostFamiliar.Battle
             if (button == null) return;
             button.onClick.RemoveAllListeners();
             button.onClick.AddListener(action);
-        }
-
-        private static Transform FindTransform(Transform root, string name)
-        {
-            if (root == null) return null;
-            foreach (Transform item in root.GetComponentsInChildren<Transform>(true))
-                if (item.name.Trim() == name) return item;
-            return null;
-        }
-
-        private static T Find<T>(Transform root, string name) where T : Component
-        {
-            Transform found = FindTransform(root, name);
-            return found != null ? found.GetComponent<T>() : null;
         }
 
         private void OnDestroy()
