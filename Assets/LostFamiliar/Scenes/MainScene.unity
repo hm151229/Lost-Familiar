@@ -43542,6 +43542,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 1881228419}
+  - component: {fileID: 2148000200}
   m_Layer: 5
   m_Name: Popup
   m_TagString: Untagged
@@ -50258,6 +50259,43 @@ PrefabInstance:
       insertIndex: -1
       addedObject: {fileID: 1860657996}
   m_SourcePrefab: {fileID: 100100000, guid: 235e51127f95fab43986b7705c14cdb0, type: 3}
+--- !u!114 &2148000200
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1881228418}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a41fb7e146f749c09cf35b4e8f6838d2, type: 3}
+  m_Name:
+  m_EditorClassIdentifier:
+  bindings:
+  - openButton: {fileID: 316806121}
+    closeButton: {fileID: 134767565}
+    popup: {fileID: 1254344140}
+  - openButton: {fileID: 486283064}
+    closeButton: {fileID: 1521383594}
+    popup: {fileID: 325184631}
+  - openButton: {fileID: 536194819}
+    closeButton: {fileID: 836322808}
+    popup: {fileID: 1216839347}
+  - openButton: {fileID: 1808115775}
+    closeButton: {fileID: 195839734}
+    popup: {fileID: 1310903509}
+  - openButton: {fileID: 904919888}
+    closeButton: {fileID: 2054383140}
+    popup: {fileID: 1358588861}
+  - openButton: {fileID: 1533215304}
+    closeButton: {fileID: 465114851}
+    popup: {fileID: 1713220057}
+  - openButton: {fileID: 804979094}
+    closeButton: {fileID: 1653499645}
+    popup: {fileID: 1457363252}
+  - openButton: {fileID: 1487346090}
+    closeButton: {fileID: 2072074609}
+    popup: {fileID: 322248659}
 --- !u!114 &2147999999
 MonoBehaviour:
   m_ObjectHideFlags: 0

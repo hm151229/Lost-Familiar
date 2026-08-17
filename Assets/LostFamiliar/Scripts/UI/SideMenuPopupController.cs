@@ -12,137 +12,63 @@ namespace LostFamiliar.Battle
         [Serializable]
         private sealed class PopupBinding
         {
-            public string buttonObjectName;
-            public string popupObjectName;
-            [NonSerialized] public Button openButton;
-            [NonSerialized] public Button closeButton;
-            [NonSerialized] public GameObject popup;
+            [SerializeField] private Button openButton;
+            [SerializeField] private Button closeButton;
+            [SerializeField] private GameObject popup;
+
             [NonSerialized] public UnityAction openAction;
             [NonSerialized] public UnityAction closeAction;
-        }
 
-        private static readonly (string button, string popup)[] DefaultBindings =
-        {
-            ("AttendanceButton", "AttendancePopup"),
-            ("CollectionButton", "CollectionPopup"),
-            ("SettingButton", "SettingPopup"),
-            ("ShopButton", "ShopPopup"),
-            ("EventButton", "EventPopup"),
-            ("MailButton", "MailPopup"),
-            ("MissionButton", "MissionPopup"),
-            ("PassButton", "PassPopup")
-        };
+            public Button OpenButton => openButton;
+            public Button CloseButton => closeButton;
+            public GameObject Popup => popup;
+        }
 
         [SerializeField] private List<PopupBinding> bindings = new List<PopupBinding>();
 
-        private bool _initialized;
-
-        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
-        private static void Install()
+        private void Awake()
         {
-            GameObject popupRoot = FindSceneObject("Popup");
-            if (popupRoot == null)
-                return;
-
-            SideMenuPopupController controller = popupRoot.GetComponent<SideMenuPopupController>();
-            if (controller == null)
-                controller = popupRoot.AddComponent<SideMenuPopupController>();
-
-            controller.Initialize();
+            BindPopups();
+            CloseAll();
         }
 
-        private void Awake() => Initialize();
-
-        private void Initialize()
+        private void BindPopups()
         {
-            if (_initialized)
-                return;
-
-            _initialized = true;
-            CreateDefaultBindingsIfNeeded();
-
             foreach (PopupBinding binding in bindings)
             {
                 if (binding == null)
                     continue;
 
-                binding.openButton = FindSceneComponent<Button>(binding.buttonObjectName);
-                binding.popup = FindSceneObject(binding.popupObjectName);
-                binding.closeButton = FindDescendantComponent<Button>(binding.popup, "Btn_Close");
-
-                if (binding.openButton != null && binding.popup != null)
+                if (binding.OpenButton != null && binding.Popup != null)
                 {
-                    GameObject targetPopup = binding.popup;
+                    GameObject targetPopup = binding.Popup;
                     binding.openAction = () => OpenOnly(targetPopup);
-                    binding.openButton.onClick.AddListener(binding.openAction);
+                    binding.OpenButton.onClick.AddListener(binding.openAction);
                 }
 
-                if (binding.closeButton != null && binding.popup != null)
+                if (binding.CloseButton != null && binding.Popup != null)
                 {
-                    GameObject targetPopup = binding.popup;
+                    GameObject targetPopup = binding.Popup;
                     binding.closeAction = () => targetPopup.SetActive(false);
-                    binding.closeButton.onClick.AddListener(binding.closeAction);
+                    binding.CloseButton.onClick.AddListener(binding.closeAction);
                 }
-
-                if (binding.popup != null)
-                    binding.popup.SetActive(false);
             }
         }
 
-        private void CreateDefaultBindingsIfNeeded()
+        private void CloseAll()
         {
-            if (bindings.Count > 0)
-                return;
-
-            foreach ((string button, string popup) in DefaultBindings)
-            {
-                bindings.Add(new PopupBinding
-                {
-                    buttonObjectName = button,
-                    popupObjectName = popup
-                });
-            }
+            foreach (PopupBinding binding in bindings)
+                if (binding?.Popup != null)
+                    binding.Popup.SetActive(false);
         }
 
         private void OpenOnly(GameObject selectedPopup)
         {
             foreach (PopupBinding binding in bindings)
             {
-                if (binding?.popup != null)
-                    binding.popup.SetActive(binding.popup == selectedPopup);
+                if (binding?.Popup != null)
+                    binding.Popup.SetActive(binding.Popup == selectedPopup);
             }
-        }
-
-        private static T FindSceneComponent<T>(string objectName) where T : Component
-        {
-            GameObject sceneObject = FindSceneObject(objectName);
-            return sceneObject != null ? sceneObject.GetComponent<T>() : null;
-        }
-
-        private static GameObject FindSceneObject(string objectName)
-        {
-            foreach (Transform candidate in Resources.FindObjectsOfTypeAll<Transform>())
-            {
-                GameObject sceneObject = candidate.gameObject;
-                if (candidate.name == objectName && sceneObject.scene.IsValid() && sceneObject.scene.isLoaded)
-                    return sceneObject;
-            }
-
-            return null;
-        }
-
-        private static T FindDescendantComponent<T>(GameObject root, string objectName) where T : Component
-        {
-            if (root == null)
-                return null;
-
-            foreach (T component in root.GetComponentsInChildren<T>(true))
-            {
-                if (component.name == objectName)
-                    return component;
-            }
-
-            return null;
         }
 
         private void OnDestroy()
@@ -152,10 +78,11 @@ namespace LostFamiliar.Battle
                 if (binding == null)
                     continue;
 
-                if (binding.openButton != null && binding.openAction != null)
-                    binding.openButton.onClick.RemoveListener(binding.openAction);
-                if (binding.closeButton != null && binding.closeAction != null)
-                    binding.closeButton.onClick.RemoveListener(binding.closeAction);
+                if (binding.OpenButton != null && binding.openAction != null)
+                    binding.OpenButton.onClick.RemoveListener(binding.openAction);
+
+                if (binding.CloseButton != null && binding.closeAction != null)
+                    binding.CloseButton.onClick.RemoveListener(binding.closeAction);
             }
         }
     }
