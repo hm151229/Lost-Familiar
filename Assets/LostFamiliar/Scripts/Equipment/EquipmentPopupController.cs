@@ -68,7 +68,6 @@ namespace LostFamiliar.Battle
         private readonly Dictionary<Filter, GameObject> _tabRedDots = new Dictionary<Filter, GameObject>();
         private Filter _filter = Filter.Weapon;
         private bool _listenersBound;
-        private bool _refreshPending;
         private Vector2 _characterStandBasePosition;
         private Vector3 _characterStandBaseScale;
         private Quaternion _characterStandBaseRotation;
@@ -85,7 +84,7 @@ namespace LostFamiliar.Battle
         private void OnEnable()
         {
             CacheCharacterStandBase();
-            RefreshNow();
+            RefreshAll();
         }
 
         private void OnDisable()
@@ -95,15 +94,14 @@ namespace LostFamiliar.Battle
 
         public void RefreshNow()
         {
-            BindListeners();
             RefreshAll();
-            _refreshPending = true;
         }
 
         public void Bind(MainBattleLoop battle)
         {
             BindBattle(battle);
-            RefreshAll();
+            if (isActiveAndEnabled)
+                RefreshAll();
         }
 
         private void BindBattle(MainBattleLoop battle)
@@ -160,10 +158,12 @@ namespace LostFamiliar.Battle
 
         private void SelectFilter(Filter filter)
         {
+            if (_filter == filter)
+                return;
+
             _filter = filter;
             RefreshInventory();
             RefreshTabColors();
-            RefreshCurrencies();
             RefreshActionRedDots();
         }
 
@@ -202,12 +202,14 @@ namespace LostFamiliar.Battle
         private void UpgradeAll()
         {
             EquipmentInventory inventory = _battle?.EquipmentInventory;
-            inventory?.TryUpgradeAll(GetSelectedEquipmentType());
+            if (inventory == null)
+                return;
+
+            int upgradedCount = inventory.TryUpgradeAll(GetSelectedEquipmentType());
+            if (upgradedCount <= 0)
+                return;
+
             GameAudioManager.Instance.PlaySfx("SFX_Stat_Upgrade");
-            SetActive(mergeAllRedDot, false);
-            RefreshTabRedDot(_filter, inventory);
-            Canvas.ForceUpdateCanvases();
-            _refreshPending = true;
         }
 
         private EquipmentType GetSelectedEquipmentType() => GetEquipmentType(_filter);
@@ -225,29 +227,13 @@ namespace LostFamiliar.Battle
         private void AutoEquip()
         {
             EquipmentInventory inventory = _battle?.EquipmentInventory;
-            inventory?.AutoEquipBest(GetSelectedEquipmentType());
-            SetActive(autoEquipRedDot, false);
-            RefreshTabRedDot(_filter, inventory);
-            Canvas.ForceUpdateCanvases();
-            _refreshPending = true;
-        }
-
-        private void LateUpdate()
-        {
-            UpdateCharacterStandMotion();
-
-            if (_refreshPending)
-            {
-                _refreshPending = false;
-                RefreshAll();
+            if (inventory == null)
                 return;
-            }
 
-            // 팝업 최초 활성화와 저장 데이터 초기화 순서가 달라도
-            // 데이터가 준비되는 즉시 버튼/탭 레드닷이 표시되도록 계속 동기화한다.
-            RefreshActionRedDots();
-            RefreshCurrencies();
+            inventory.AutoEquipBest(GetSelectedEquipmentType());
         }
+
+        private void LateUpdate() => UpdateCharacterStandMotion();
 
         private void CacheCharacterStandBase()
         {
@@ -307,6 +293,8 @@ namespace LostFamiliar.Battle
             RefreshStats();
             RefreshInventory();
             RefreshTabColors();
+            RefreshCurrencies();
+            RefreshActionRedDots();
         }
 
         private void RefreshEquippedSlots()
