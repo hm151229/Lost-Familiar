@@ -24,46 +24,85 @@ namespace LostFamiliar.Battle
         [SerializeField] private Sprite skillPreviewSprite;
         [SerializeField] private Sprite weaponPreviewSprite;
 
+        [Header("Tabs")]
+        [SerializeField] private Button armorTabButton;
+        [SerializeField] private Button accessoryTabButton;
+        [SerializeField] private Button skillTabButton;
+        [SerializeField] private Button weaponTabButton;
+        [SerializeField] private TMP_Text armorTabTitle;
+        [SerializeField] private TMP_Text accessoryTabTitle;
+        [SerializeField] private TMP_Text skillTabTitle;
+        [SerializeField] private TMP_Text weaponTabTitle;
+
+        [Header("Right Panel")]
+        [SerializeField] private TMP_Text categoryTitleText;
+        [SerializeField] private TMP_Text levelTitleText;
+        [SerializeField] private TMP_Text levelText;
+        [SerializeField] private TMP_Text progressText;
+        [SerializeField] private Image progressFill;
+
+        [Header("Currency")]
+        [SerializeField] private TMP_Text goldText;
+        [SerializeField] private TMP_Text gemText;
+
+        [Header("Summon")]
+        [SerializeField] private Button summon10Button;
+        [SerializeField] private Button summon30Button;
+        [SerializeField] private Button closeButton;
+        [SerializeField] private Image summonPreviewIcon;
+        [SerializeField] private TMP_Text summon10CostText;
+        [SerializeField] private TMP_Text summon30CostText;
+
+        [Header("Result")]
+        [SerializeField] private GameObject resultPanel;
+        [SerializeField] private Button resultBackgroundButton;
+        [SerializeField] private GameObject summon10Result;
+        [SerializeField] private GameObject summon30Result;
+        [SerializeField] private Transform summon10SlotGroup;
+        [SerializeField] private Transform summon30SlotGroup;
+
+        [Header("Prefabs")]
+        [SerializeField] private GameObject inventorySlotPrefab;
+
         private MainBattleLoop _battle;
         private readonly Dictionary<GachaCategory, Button> _tabs = new Dictionary<GachaCategory, Button>();
+        private readonly Dictionary<GachaCategory, TMP_Text> _tabTitles =
+            new Dictionary<GachaCategory, TMP_Text>();
         private GachaCategory _selected = GachaCategory.Armor;
-        private TMP_Text _categoryTitleText;
-        private TMP_Text _levelTitleText;
-        private TMP_Text _levelText;
-        private TMP_Text _progressText;
-        private Image _progressFill;
-        private TMP_Text _goldText;
-        private TMP_Text _gemText;
-        private Button _summon10Button;
-        private Button _summon30Button;
-        private Image _summonPreviewIcon;
         private RectTransform _summonPreviewIconRect;
         private Vector2 _summonPreviewBasePosition;
         private Quaternion _summonPreviewBaseRotation = Quaternion.identity;
         private bool _summonPreviewTransformCached;
-        private GameObject _resultPanel;
-        private Button _resultBackgroundButton;
-        private GameObject _summon10Result;
-        private GameObject _summon30Result;
-        private Transform _summon10SlotGroup;
-        private Transform _summon30SlotGroup;
-        private GameObject _inventorySlotPrefab;
         private Coroutine _resultRevealRoutine;
         private bool _resultSlotsInitialized;
         private bool _listenersBound;
 
         private void Awake()
         {
-            FindReferences();
+            BuildTabLookup();
+            CacheSummonPreviewTransform();
+            ConfigureResultPanel();
             BindListeners();
+
+            if (summon10CostText != null)
+                summon10CostText.text = GachaBalance.Cost(10).ToString();
+            if (summon30CostText != null)
+                summon30CostText.text = GachaBalance.Cost(30).ToString();
+
+            DisableDecorativeRaycasts(
+                summonPreviewIcon != null ? summonPreviewIcon.transform.parent : null);
         }
 
         private void OnEnable()
         {
-            FindReferences();
-            BindListeners();
-            BindBattle(FindFirstObjectByType<MainBattleLoop>());
             Refresh();
+        }
+
+        public void Bind(MainBattleLoop battle)
+        {
+            BindBattle(battle);
+            if (isActiveAndEnabled)
+                Refresh();
         }
 
         private void BindBattle(MainBattleLoop battle)
@@ -77,62 +116,34 @@ namespace LostFamiliar.Battle
                 _battle.StateChanged += Refresh;
         }
 
-        private void FindReferences()
+        private void BuildTabLookup()
         {
-            RegisterTab(GachaCategory.Armor, "Tab_Armor");
-            RegisterTab(GachaCategory.Accessory, "Tab_Accessory");
-            RegisterTab(GachaCategory.Skill, "Tab_Skill");
-            RegisterTab(GachaCategory.Weapon, "Tab_Weapon");
+            _tabs.Clear();
+            _tabTitles.Clear();
 
-            Transform rightGroup = FindDescendant("RightGroup");
-            _categoryTitleText ??= GetChild<TMP_Text>(rightGroup, "TitleText");
+            RegisterTab(GachaCategory.Armor, armorTabButton, armorTabTitle);
+            RegisterTab(GachaCategory.Accessory, accessoryTabButton, accessoryTabTitle);
+            RegisterTab(GachaCategory.Skill, skillTabButton, skillTabTitle);
+            RegisterTab(GachaCategory.Weapon, weaponTabButton, weaponTabTitle);
+        }
 
-            Transform levelPanel = FindDescendant("GachaLevelPanel");
-            _levelTitleText ??= GetChild<TMP_Text>(levelPanel, "LevelTitleText");
-            _levelText ??= GetChild<TMP_Text>(levelPanel, "LevelText");
-            _progressText ??= GetChild<TMP_Text>(levelPanel, "ProgressText");
-            _progressFill ??= GetChild<Image>(levelPanel, "Fill");
+        private void RegisterTab(GachaCategory category, Button button, TMP_Text title)
+        {
+            if (button != null)
+                _tabs[category] = button;
+            if (title != null)
+                _tabTitles[category] = title;
+        }
 
-            _summon10Button ??= GetButton("Btn_Summon10");
-            _summon30Button ??= GetButton("Btn_Summon30");
-            SetCostText(_summon10Button, GachaBalance.Cost(10));
-            SetCostText(_summon30Button, GachaBalance.Cost(30));
+        private void CacheSummonPreviewTransform()
+        {
+            if (_summonPreviewTransformCached || summonPreviewIcon == null)
+                return;
 
-            Transform header = FindDescendant("Header");
-            Transform goldPanel = FindDescendant(header, "GoldPanel");
-            Transform gemPanel = FindDescendant(header, "GemPanel");
-            _goldText ??= GetChild<TMP_Text>(goldPanel, "AmountText");
-            _gemText ??= GetChild<TMP_Text>(gemPanel, "AmountText");
-
-            Transform summonPreview = FindDescendant("SummonPreview");
-            DisableDecorativeRaycasts(summonPreview);
-            _summonPreviewIcon ??= GetChild<Image>(summonPreview, "IconImage");
-            if (!_summonPreviewTransformCached && _summonPreviewIcon != null)
-            {
-                _summonPreviewIconRect = _summonPreviewIcon.rectTransform;
-                _summonPreviewBasePosition = _summonPreviewIconRect.anchoredPosition;
-                _summonPreviewBaseRotation = _summonPreviewIconRect.localRotation;
-                _summonPreviewTransformCached = true;
-            }
-
-            Transform result = FindDescendant("ResultPanel");
-            _resultPanel ??= result?.gameObject;
-            Transform resultBackground = FindDescendant(result, "BG");
-            if (_resultBackgroundButton == null && resultBackground != null)
-            {
-                _resultBackgroundButton = resultBackground.GetComponent<Button>() ??
-                                          resultBackground.gameObject.AddComponent<Button>();
-                _resultBackgroundButton.targetGraphic = resultBackground.GetComponent<Graphic>();
-                _resultBackgroundButton.transition = Selectable.Transition.None;
-            }
-            Transform summon10 = FindDescendant(result, "Summon10");
-            Transform summon30 = FindDescendant(result, "Summon30");
-            _summon10Result ??= summon10?.gameObject;
-            _summon30Result ??= summon30?.gameObject;
-            _summon10SlotGroup ??= FindDescendant(summon10, "ResultSlotGroup");
-            _summon30SlotGroup ??= FindDescendant(summon30, "ResultSlotGroup");
-            _inventorySlotPrefab ??= Resources.Load<GameObject>("Prefabs/InventorySlot");
-            InitializeResultPanel(result, resultBackground);
+            _summonPreviewIconRect = summonPreviewIcon.rectTransform;
+            _summonPreviewBasePosition = _summonPreviewIconRect.anchoredPosition;
+            _summonPreviewBaseRotation = _summonPreviewIconRect.localRotation;
+            _summonPreviewTransformCached = true;
         }
 
         private static void DisableDecorativeRaycasts(Transform root)
@@ -159,19 +170,10 @@ namespace LostFamiliar.Battle
                 GachaCategory category = pair.Key;
                 pair.Value.onClick.AddListener(() => SelectCategory(category));
             }
-            _summon10Button?.onClick.AddListener(() => Summon(10));
-            _summon30Button?.onClick.AddListener(() => Summon(30));
-            GetButton("Btn_Close")?.onClick.AddListener(Close);
-            _resultBackgroundButton?.onClick.AddListener(CloseResultPanel);
-        }
-
-        private void RegisterTab(GachaCategory category, string objectName)
-        {
-            if (_tabs.ContainsKey(category))
-                return;
-            Button button = GetButton(objectName);
-            if (button != null)
-                _tabs.Add(category, button);
+            summon10Button?.onClick.AddListener(() => Summon(10));
+            summon30Button?.onClick.AddListener(() => Summon(30));
+            closeButton?.onClick.AddListener(Close);
+            resultBackgroundButton?.onClick.AddListener(CloseResultPanel);
         }
 
         private void SelectCategory(GachaCategory category)
@@ -197,45 +199,52 @@ namespace LostFamiliar.Battle
             Refresh();
         }
 
-        private void InitializeResultPanel(Transform resultPanel, Transform resultBackground)
+        private void ConfigureResultPanel()
         {
             if (resultPanel == null)
                 return;
 
+            Transform backgroundTransform = resultBackgroundButton != null
+                ? resultBackgroundButton.transform
+                : null;
+
+            if (resultBackgroundButton != null)
+                resultBackgroundButton.transition = Selectable.Transition.None;
+
             foreach (Graphic graphic in resultPanel.GetComponentsInChildren<Graphic>(true))
-                graphic.raycastTarget = graphic.transform == resultBackground;
+                graphic.raycastTarget = backgroundTransform != null && graphic.transform == backgroundTransform;
             foreach (Selectable selectable in resultPanel.GetComponentsInChildren<Selectable>(true))
-                if (selectable != _resultBackgroundButton)
+                if (selectable != resultBackgroundButton)
                     selectable.interactable = false;
 
             if (_resultSlotsInitialized)
                 return;
             _resultSlotsInitialized = true;
-            ClearSlotGroup(_summon10SlotGroup);
-            ClearSlotGroup(_summon30SlotGroup);
-            _resultPanel.SetActive(false);
+            ClearSlotGroup(summon10SlotGroup);
+            ClearSlotGroup(summon30SlotGroup);
+            resultPanel.SetActive(false);
         }
 
         private void ShowResultPanel(IReadOnlyList<GachaReward> rewards, int count)
         {
-            if (_resultPanel == null || _inventorySlotPrefab == null)
+            if (resultPanel == null || inventorySlotPrefab == null)
                 return;
 
-            ClearSlotGroup(_summon10SlotGroup);
-            ClearSlotGroup(_summon30SlotGroup);
+            ClearSlotGroup(summon10SlotGroup);
+            ClearSlotGroup(summon30SlotGroup);
 
             bool show10 = count == 10;
-            _summon10Result?.SetActive(show10);
-            _summon30Result?.SetActive(!show10 && count == 30);
-            Transform targetGroup = show10 ? _summon10SlotGroup : _summon30SlotGroup;
-            if (_resultBackgroundButton != null)
-                _resultBackgroundButton.interactable = false;
-            _resultPanel.SetActive(true);
+            summon10Result?.SetActive(show10);
+            summon30Result?.SetActive(!show10 && count == 30);
+            Transform targetGroup = show10 ? summon10SlotGroup : summon30SlotGroup;
+            if (resultBackgroundButton != null)
+                resultBackgroundButton.interactable = false;
+            resultPanel.SetActive(true);
             GameAudioManager.Instance.PlaySfx("SFX_Summon_Result_Open");
             if (targetGroup == null || rewards == null)
             {
-                if (_resultBackgroundButton != null)
-                    _resultBackgroundButton.interactable = true;
+                if (resultBackgroundButton != null)
+                    resultBackgroundButton.interactable = true;
                 return;
             }
 
@@ -249,10 +258,15 @@ namespace LostFamiliar.Battle
             for (int i = 0; i < rewards.Count; i++)
             {
                 GachaReward reward = rewards[i];
-                GameObject slot = Instantiate(_inventorySlotPrefab, targetGroup);
+                GameObject slot = Instantiate(inventorySlotPrefab, targetGroup);
                 slot.name = $"ResultSlot{i + 1:00}";
-                InventorySlotView view = slot.GetComponent<InventorySlotView>() ??
-                                         slot.AddComponent<InventorySlotView>();
+                InventorySlotView view = slot.GetComponent<InventorySlotView>();
+                if (view == null)
+                {
+                    Debug.LogError("InventorySlot prefab에 InventorySlotView가 없습니다.", slot);
+                    Destroy(slot);
+                    continue;
+                }
                 Sprite icon = reward.equipment != null ? reward.equipment.icon : reward.skill?.icon;
                 view.Render(
                     icon,
@@ -272,8 +286,8 @@ namespace LostFamiliar.Battle
 
             // Keep the result locked until the final slot has finished popping in.
             yield return new WaitForSecondsRealtime(.16f);
-            if (_resultBackgroundButton != null)
-                _resultBackgroundButton.interactable = true;
+            if (resultBackgroundButton != null)
+                resultBackgroundButton.interactable = true;
             _resultRevealRoutine = null;
         }
 
@@ -339,8 +353,8 @@ namespace LostFamiliar.Battle
                 StopCoroutine(_resultRevealRoutine);
                 _resultRevealRoutine = null;
             }
-            if (_resultPanel != null)
-                _resultPanel.SetActive(false);
+            if (resultPanel != null)
+                resultPanel.SetActive(false);
         }
 
         private void Refresh()
@@ -351,24 +365,24 @@ namespace LostFamiliar.Battle
             int level = _battle.GetGachaLevel(_selected);
             int progress = _battle.GetGachaProgress(_selected);
             int required = GachaBalance.RequiredDraws(level);
-            if (_categoryTitleText != null)
-                _categoryTitleText.text = $"{CategoryName(_selected)} 소환";
-            if (_levelText != null)
-                _levelText.text = $"Lv.{level}";
-            if (_progressText != null)
-                _progressText.text = required <= 0 ? "MAX" : $"{progress} / {required}";
-            if (_progressFill != null)
+            if (categoryTitleText != null)
+                categoryTitleText.text = $"{CategoryName(_selected)} 소환";
+            if (levelText != null)
+                levelText.text = $"Lv.{level}";
+            if (progressText != null)
+                progressText.text = required <= 0 ? "MAX" : $"{progress} / {required}";
+            if (progressFill != null)
             {
-                _progressFill.type = Image.Type.Filled;
-                _progressFill.fillMethod = Image.FillMethod.Horizontal;
-                _progressFill.fillOrigin = (int)Image.OriginHorizontal.Left;
-                _progressFill.fillAmount = required <= 0 ? 1f : Mathf.Clamp01(progress / (float)required);
+                progressFill.type = Image.Type.Filled;
+                progressFill.fillMethod = Image.FillMethod.Horizontal;
+                progressFill.fillOrigin = (int)Image.OriginHorizontal.Left;
+                progressFill.fillAmount = required <= 0 ? 1f : Mathf.Clamp01(progress / (float)required);
             }
 
-            if (_goldText != null) _goldText.text = MainHUDController.FormatNumber(_battle.Gold);
-            if (_gemText != null) _gemText.text = MainHUDController.FormatGem(_battle.Gems);
-            if (_summon10Button != null) _summon10Button.interactable = _battle.Gems >= GachaBalance.Cost(10);
-            if (_summon30Button != null) _summon30Button.interactable = _battle.Gems >= GachaBalance.Cost(30);
+            if (goldText != null) goldText.text = MainHUDController.FormatNumber(_battle.Gold);
+            if (gemText != null) gemText.text = MainHUDController.FormatGem(_battle.Gems);
+            if (summon10Button != null) summon10Button.interactable = _battle.Gems >= GachaBalance.Cost(10);
+            if (summon30Button != null) summon30Button.interactable = _battle.Gems >= GachaBalance.Cost(30);
 
             RefreshTabs();
 
@@ -387,9 +401,8 @@ namespace LostFamiliar.Battle
                 if (button.image != null)
                     button.image.color = selected ? SelectedTabColor : DefaultTabColor;
 
-                TMP_Text titleText = GetChild<TMP_Text>(button.transform, "TitleText");
-                if (titleText != null)
-                    titleText.color = selected ? SelectedTabTextColor : DefaultTabTextColor;
+                if (_tabTitles.TryGetValue(pair.Key, out TMP_Text title))
+                    title.color = selected ? SelectedTabTextColor : DefaultTabTextColor;
 
                 if (button.transform is RectTransform rectTransform)
                     rectTransform.sizeDelta = selected ? SelectedTabSize : DefaultTabSize;
@@ -398,9 +411,9 @@ namespace LostFamiliar.Battle
 
         private void RefreshSummonPreview()
         {
-            if (_summonPreviewIcon == null)
+            if (summonPreviewIcon == null)
                 return;
-            _summonPreviewIcon.sprite = _selected switch
+            summonPreviewIcon.sprite = _selected switch
             {
                 GachaCategory.Armor => armorPreviewSprite,
                 GachaCategory.Accessory => accessoryPreviewSprite,
@@ -408,8 +421,8 @@ namespace LostFamiliar.Battle
                 GachaCategory.Weapon => weaponPreviewSprite,
                 _ => null
             };
-            _summonPreviewIcon.enabled = _summonPreviewIcon.sprite != null;
-            _summonPreviewIcon.preserveAspect = true;
+            summonPreviewIcon.enabled = summonPreviewIcon.sprite != null;
+            summonPreviewIcon.preserveAspect = true;
         }
 
         private void Update()
@@ -421,13 +434,6 @@ namespace LostFamiliar.Battle
                                                         Vector2.up * (Mathf.Sin(phase) * 14f);
             _summonPreviewIconRect.localRotation = _summonPreviewBaseRotation *
                                                    Quaternion.Euler(0f, 0f, Mathf.Sin(phase * .72f) * 1.5f);
-        }
-
-        private void SetCostText(Button button, int cost)
-        {
-            TMP_Text text = button != null ? GetChild<TMP_Text>(button.transform, "CostText") : null;
-            if (text != null)
-                text.text = cost.ToString();
         }
 
         private void Close() => gameObject.SetActive(false);
@@ -451,14 +457,6 @@ namespace LostFamiliar.Battle
             _ => "뽑기"
         };
 
-        private Button GetButton(string objectName)
-        {
-            Transform target = FindDescendant(objectName);
-            return target != null ? target.GetComponent<Button>() : null;
-        }
-
-        private Transform FindDescendant(string objectName) => FindDescendant(transform, objectName);
-
         private static Transform FindDescendant(Transform root, string objectName)
         {
             if (root == null)
@@ -469,17 +467,11 @@ namespace LostFamiliar.Battle
             return null;
         }
 
-        private static T GetChild<T>(Transform root, string objectName) where T : Component
-        {
-            Transform child = FindDescendant(root, objectName);
-            return child != null ? child.GetComponent<T>() : null;
-        }
-
         private void OnDestroy()
         {
             if (_battle != null)
                 _battle.StateChanged -= Refresh;
-            _resultBackgroundButton?.onClick.RemoveListener(CloseResultPanel);
+            resultBackgroundButton?.onClick.RemoveListener(CloseResultPanel);
         }
     }
 }
