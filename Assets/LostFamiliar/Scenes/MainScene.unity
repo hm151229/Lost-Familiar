@@ -14992,7 +14992,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   container: {fileID: 659703387}
   itemPrefab: {fileID: 773787268038303551, guid: 488edcd294572e84f9ab35afcf1388fe, type: 3}
-  resourcesPrefabPath: UI/RewardFeedItem
+  layout: {fileID: 659703389}
   maxVisibleItems: 4
   visibleDuration: 3
   spacing: 4
@@ -27309,6 +27309,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b73d0a6e214c4f85a931702d68ec5f49, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  backgroundPanel: {fileID: 886278458}
+  timeFill: {fileID: 250190123}
+  amountText: {fileID: 1176046765}
+  receiveButton: {fileID: 764248375}
 --- !u!1 &1202300107
 GameObject:
   m_ObjectHideFlags: 0

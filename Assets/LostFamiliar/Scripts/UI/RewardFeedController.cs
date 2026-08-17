@@ -50,7 +50,7 @@ namespace LostFamiliar.Battle
         [Header("프리팹 / 컨테이너")]
         [SerializeField] private Transform container;
         [SerializeField] private RewardFeedItemUI itemPrefab;
-        [SerializeField] private string resourcesPrefabPath = "UI/RewardFeedItem";
+        [SerializeField] private VerticalLayoutGroup layout;
 
         [Header("표시 규칙")]
         [SerializeField, Range(1, 4)] private int maxVisibleItems = 4;
@@ -77,10 +77,9 @@ namespace LostFamiliar.Battle
             _battle = battle;
             if (container == null)
                 container = transform;
-            if (itemPrefab == null && !string.IsNullOrWhiteSpace(resourcesPrefabPath))
-                itemPrefab = Resources.Load<RewardFeedItemUI>(resourcesPrefabPath);
-            EnsureLayout();
-            _battle.RewardGained += OnRewardGained;
+            ConfigureLayout();
+            if (_battle != null)
+                _battle.RewardGained += OnRewardGained;
         }
 
         public void ShowReward(RewardNotification reward)
@@ -92,7 +91,7 @@ namespace LostFamiliar.Battle
                 {
                     Debug.LogWarning(
                         "RewardFeedItemUI 프리팹이 연결되지 않았습니다. RewardFeedController의 Item Prefab에 연결하거나 " +
-                        "Assets/LostFamiliar/Resources/UI/RewardFeedItem.prefab 경로에 생성해주세요.",
+                        "Inspector에서 Item Prefab을 연결해주세요.",
                         this);
                     _missingPrefabWarningShown = true;
                 }
@@ -162,14 +161,11 @@ namespace LostFamiliar.Battle
             };
         }
 
-        private void EnsureLayout()
+        private void ConfigureLayout()
         {
-            if (container == null)
+            if (layout == null)
                 return;
 
-            VerticalLayoutGroup layout = container.GetComponent<VerticalLayoutGroup>();
-            if (layout == null)
-                layout = container.gameObject.AddComponent<VerticalLayoutGroup>();
             layout.childAlignment = TextAnchor.UpperLeft;
             layout.spacing = spacing;
             layout.childControlWidth = true;

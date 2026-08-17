@@ -144,7 +144,12 @@ namespace LostFamiliar.Battle
             TowerSystem = new TowerSystem(_saveData);
             double offlineSeconds = OfflineRewardSystem?.CaptureElapsedSeconds() ?? 0d;
             RefreshDailyTowerTickets();
-            equipmentDatabase ??= Resources.Load<EquipmentDatabase>("Equipment/DefaultEquipmentDatabase");
+            if (equipmentDatabase == null)
+            {
+                Debug.LogError("EquipmentDatabase가 연결되지 않았습니다.", this);
+                return;
+            }
+
             InitializeEquipmentInventory();
             SkillInventory = new SkillInventory(_saveData);
             GachaSystem = new GachaSystem(_saveData, equipmentDatabase, SkillInventory);

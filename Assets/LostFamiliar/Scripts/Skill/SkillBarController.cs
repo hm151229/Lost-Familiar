@@ -55,26 +55,6 @@ namespace LostFamiliar.Battle
                 slot?.Refresh();
         }
 
-        internal static GameObject FindSceneObject(string objectName)
-        {
-            foreach (Transform candidate in Resources.FindObjectsOfTypeAll<Transform>())
-            {
-                GameObject sceneObject = candidate.gameObject;
-                if (candidate.name == objectName && sceneObject.scene.IsValid() && sceneObject.scene.isLoaded)
-                    return sceneObject;
-            }
-            return null;
-        }
-
-        internal static Transform FindDescendant(Transform root, string objectName)
-        {
-            if (root == null)
-                return null;
-            foreach (Transform child in root.GetComponentsInChildren<Transform>(true))
-                if (child.name == objectName) return child;
-            return null;
-        }
-
         private void OnDestroy()
         {
             if (_battle != null)

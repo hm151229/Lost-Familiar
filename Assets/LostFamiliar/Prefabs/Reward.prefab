@@ -434,6 +434,7 @@ GameObject:
   m_Component:
   - component: {fileID: 1077671594432943165}
   - component: {fileID: 773787268038303551}
+  - component: {fileID: 773787268038303552}
   m_Layer: 5
   m_Name: Reward
   m_TagString: Untagged
@@ -479,4 +480,17 @@ MonoBehaviour:
   rewardIcon: {fileID: 1897160108669521224}
   acquisitionText: {fileID: 6265507387860517396}
   amountText: {fileID: 598836552822828161}
+  canvasGroup: {fileID: 773787268038303552}
   fadeDuration: 0.25
+--- !u!225 &773787268038303552
+CanvasGroup:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8642672914989174078}
+  m_Enabled: 1
+  m_Alpha: 1
+  m_Interactable: 1
+  m_BlocksRaycasts: 1
+  m_IgnoreParentGroups: 0

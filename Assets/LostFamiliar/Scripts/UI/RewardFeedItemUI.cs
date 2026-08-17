@@ -12,9 +12,9 @@ namespace LostFamiliar.Battle
         [SerializeField] private Image rewardIcon;
         [SerializeField] private TMP_Text acquisitionText;
         [SerializeField] private TMP_Text amountText;
+        [SerializeField] private CanvasGroup canvasGroup;
         [SerializeField, Min(0f)] private float fadeDuration = .25f;
 
-        private CanvasGroup _canvasGroup;
         private Coroutine _lifetimeRoutine;
         private Action<RewardFeedItemUI> _expired;
 
@@ -25,12 +25,8 @@ namespace LostFamiliar.Battle
             float lifetime,
             Action<RewardFeedItemUI> expired)
         {
-            AutoFindReferences();
-            if (_canvasGroup == null)
-                _canvasGroup = GetComponent<CanvasGroup>();
-            if (_canvasGroup == null)
-                _canvasGroup = gameObject.AddComponent<CanvasGroup>();
-            _canvasGroup.alpha = 1f;
+            if (canvasGroup != null)
+                canvasGroup.alpha = 1f;
             _expired = expired;
 
             if (rewardIcon != null)
@@ -62,6 +58,9 @@ namespace LostFamiliar.Battle
         [ContextMenu("Auto Find Item References")]
         public void AutoFindReferences()
         {
+            if (canvasGroup == null)
+                canvasGroup = GetComponent<CanvasGroup>();
+
             if (rewardIcon == null)
                 rewardIcon = FindImage("Icon", "RewardIcon", "UIIcon");
 
@@ -102,13 +101,13 @@ namespace LostFamiliar.Battle
             float visibleDuration = Mathf.Max(0f, lifetime - fadeDuration);
             yield return new WaitForSecondsRealtime(visibleDuration);
 
-            if (_canvasGroup != null && fadeDuration > 0f)
+            if (canvasGroup != null && fadeDuration > 0f)
             {
                 float elapsed = 0f;
                 while (elapsed < fadeDuration)
                 {
                     elapsed += Time.unscaledDeltaTime;
-                    _canvasGroup.alpha = 1f - Mathf.Clamp01(elapsed / fadeDuration);
+                    canvasGroup.alpha = 1f - Mathf.Clamp01(elapsed / fadeDuration);
                     yield return null;
                 }
             }
