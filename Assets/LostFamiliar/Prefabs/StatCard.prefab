@@ -1298,6 +1298,7 @@ GameObject:
   - component: {fileID: 7605618380402087139}
   - component: {fileID: 8034617995412322224}
   - component: {fileID: 8047508242487743553}
+  - component: {fileID: 7767294278535668211}
   m_Layer: 5
   m_Name: Btn_LevelUp
   m_TagString: Untagged
@@ -1407,6 +1408,19 @@ MonoBehaviour:
   m_OnClick:
     m_PersistentCalls:
       m_Calls: []
+--- !u!114 &7767294278535668211
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7759324410368532620}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 00e1323c1f3106b478fd1dd00155e950, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  owner: {fileID: 3381143233455654012}
 --- !u!1 &8072634889586330828
 GameObject:
   m_ObjectHideFlags: 0

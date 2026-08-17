@@ -2,7 +2,6 @@ using System.Collections;
 using LostFamiliar.Core;
 using TMPro;
 using UnityEngine;
-using UnityEngine.EventSystems;
 using UnityEngine.UI;
 
 namespace LostFamiliar.Battle
@@ -36,17 +35,13 @@ namespace LostFamiliar.Battle
         private Color _normalButtonTextColor;
         private bool _colorsCached;
 
-        private void Awake() => EnsureUpgradeButton();
-
-        private void Start()
+        private void Awake()
         {
-            if (_battle == null)
-                Bind(FindFirstObjectByType<MainBattleLoop>());
+            CacheTextColors();
         }
 
         public void Bind(MainBattleLoop battle)
         {
-            EnsureUpgradeButton();
             if (_battle != null)
                 _battle.StateChanged -= Refresh;
 
@@ -150,38 +145,6 @@ namespace LostFamiliar.Battle
             }
         }
 
-        private void EnsureUpgradeButton()
-        {
-            if (upgradeButton == null)
-            {
-                Button[] buttons = GetComponentsInChildren<Button>(true);
-                foreach (Button button in buttons)
-                {
-                    if (button.name == "Btn_LevelUp")
-                    {
-                        upgradeButton = button;
-                        break;
-                    }
-                }
-
-                if (upgradeButton == null && buttons.Length > 0)
-                    upgradeButton = buttons[0];
-            }
-
-            if (upgradeButton == null)
-                return;
-
-            if (upgradeButtonText == null)
-                upgradeButtonText = upgradeButton.GetComponentInChildren<TMP_Text>(true);
-
-            CacheTextColors();
-
-            UpgradeButtonPressRelay relay = upgradeButton.GetComponent<UpgradeButtonPressRelay>();
-            if (relay == null)
-                relay = upgradeButton.gameObject.AddComponent<UpgradeButtonPressRelay>();
-            relay.Bind(this);
-        }
-
         private void CacheTextColors()
         {
             if (_colorsCached)
@@ -237,15 +200,4 @@ namespace LostFamiliar.Battle
         }
     }
 
-    [DisallowMultipleComponent]
-    internal sealed class UpgradeButtonPressRelay : MonoBehaviour,
-        IPointerDownHandler, IPointerUpHandler, IPointerExitHandler
-    {
-        private UpgradeStatRowUI _owner;
-
-        public void Bind(UpgradeStatRowUI owner) => _owner = owner;
-        public void OnPointerDown(PointerEventData eventData) => _owner?.BeginUpgradePress();
-        public void OnPointerUp(PointerEventData eventData) => _owner?.EndUpgradePress();
-        public void OnPointerExit(PointerEventData eventData) => _owner?.EndUpgradePress();
-    }
 }
