@@ -25,6 +25,11 @@ namespace LostFamiliar.Battle
         [SerializeField] private PlayerAutoCombat player;
         [SerializeField] private Transform bossSpawnPoint;
 
+        [Header("World")]
+        [SerializeField] private Camera mainCamera;
+        [SerializeField] private CameraFollow2D cameraFollow;
+        [SerializeField] private BackgroundTiler2D backgroundTiler;
+
         [Header("UI")]
         [SerializeField] private BossChallengeButtonPresenter bossChallengePresenter;
         [SerializeField] private MainHUDController mainHud;
@@ -37,6 +42,11 @@ namespace LostFamiliar.Battle
         [SerializeField] private SkillBarController skillBar;
         [SerializeField] private AdventureTowerPopupController adventureTowerPopup;
         [SerializeField] private BottomNavigationController bottomNavigation;
+
+        [Header("Boss Transition")]
+        [SerializeField] private Canvas mainUiCanvas;
+        [SerializeField] private GameObject popupRoot;
+        [SerializeField] private Sprite bossTransitionSprite;
 
         [SerializeField] private Vector3 bossPlayerPosition = new Vector3(-1.35f, -.8f, 0f);
         [SerializeField, Min(1f)] private float bossSpawnDistance = 2.8f;
@@ -97,8 +107,25 @@ namespace LostFamiliar.Battle
         private bool _transitioning;
         private bool _initialized;
 
+        private void Awake()
+        {
+            Screen.orientation = ScreenOrientation.Portrait;
+            Application.targetFrameRate = 60;
+        }
+
+        private void Start()
+        {
+            if (_initialized)
+                return;
+
+            Initialize(stageDatabase, player);
+        }
+
         public void Initialize(StageDatabase database, PlayerAutoCombat playerActor)
         {
+            if (_initialized)
+                return;
+
             if (database == null || playerActor == null)
             {
                 Debug.LogError("전투 초기화에 StageDatabase와 PlayerAutoCombat이 필요합니다.", this);
@@ -107,6 +134,8 @@ namespace LostFamiliar.Battle
 
             stageDatabase = database;
             player = playerActor;
+            cameraFollow?.Bind(player.transform);
+            backgroundTiler?.Bind(player.transform);
             _saveData ??= SaveService.Load();
             _saveData.Normalize();
             UpgradeSystem = new UpgradeSystem(_saveData);
@@ -332,11 +361,7 @@ namespace LostFamiliar.Battle
             yield return PlayBossCutTransition(() =>
             {
                 player.ResetPosition(bossPlayerPosition);
-                CameraFollow2D cameraFollow = Camera.main != null
-                    ? Camera.main.GetComponent<CameraFollow2D>()
-                    : null;
-                if (cameraFollow != null)
-                    cameraFollow.SnapToTarget();
+                cameraFollow?.SnapToTarget();
 
                 player.Revive();
                 Phase = BattlePhase.Boss;
@@ -367,9 +392,7 @@ namespace LostFamiliar.Battle
                 yield break;
             }
 
-            Canvas canvas = FindMainUiCanvas();
-            Sprite fadeSprite = Resources.Load<Sprite>("UI/Fade");
-            if (canvas == null || fadeSprite == null)
+            if (mainUiCanvas == null || bossTransitionSprite == null)
             {
                 onScreenCovered?.Invoke();
                 yield return new WaitForSecondsRealtime(.5f);
@@ -381,7 +404,7 @@ namespace LostFamiliar.Battle
                 typeof(RectTransform),
                 typeof(CanvasGroup));
             RectTransform overlayRect = overlay.GetComponent<RectTransform>();
-            overlayRect.SetParent(canvas.transform, false);
+            overlayRect.SetParent(mainUiCanvas.transform, false);
             overlayRect.anchorMin = Vector2.zero;
             overlayRect.anchorMax = Vector2.one;
             overlayRect.offsetMin = Vector2.zero;
@@ -396,12 +419,13 @@ namespace LostFamiliar.Battle
             Canvas.ForceUpdateCanvases();
             float viewWidth = Mathf.Max(1f, overlayRect.rect.width);
             float viewHeight = Mathf.Max(1f, overlayRect.rect.height);
-            float spriteAspect = fadeSprite.rect.width / Mathf.Max(1f, fadeSprite.rect.height);
+            float spriteAspect = bossTransitionSprite.rect.width /
+                                 Mathf.Max(1f, bossTransitionSprite.rect.height);
             Vector2 imageSize = new Vector2(viewHeight * spriteAspect, viewHeight);
             float travelDistance = (viewWidth + imageSize.x) * .5f + 80f;
 
             RectTransform fade = CreateFadeCrossImage(
-                overlayRect, "Fade_Wipe", fadeSprite, imageSize, false);
+                overlayRect, "Fade_Wipe", bossTransitionSprite, imageSize, false);
 
             const float closeDuration = .34f;
             float elapsed = 0f;
@@ -434,55 +458,31 @@ namespace LostFamiliar.Battle
             onScreenCovered?.Invoke();
         }
 
-        private static bool IsAnyPopupOpen()
+        private bool IsAnyPopupOpen()
         {
-            foreach (Transform candidate in Resources.FindObjectsOfTypeAll<Transform>())
+            if (IsPopupOpen(equipmentPopup) ||
+                IsPopupOpen(gachaPopup) ||
+                IsPopupOpen(upgradePopup) ||
+                IsPopupOpen(adventureTowerPopup))
             {
-                GameObject popup = candidate.gameObject;
-                if (!popup.scene.IsValid() || !popup.scene.isLoaded || !popup.activeInHierarchy)
-                    continue;
-                if (!candidate.name.EndsWith("Popup", StringComparison.Ordinal))
-                    continue;
-
-                // These are always-active layout containers, not opened popup windows.
-                if (candidate.name == "MainPopup" || candidate.name == "Popup")
-                    continue;
                 return true;
             }
+
+            if (popupRoot == null)
+                return false;
+
+            for (int i = 0; i < popupRoot.transform.childCount; i++)
+            {
+                GameObject popup = popupRoot.transform.GetChild(i).gameObject;
+                if (popup.activeInHierarchy)
+                    return true;
+            }
+
             return false;
         }
 
-        private static Canvas FindMainUiCanvas()
-        {
-            // Player HP bars also use a GameObject named "Canvas".  Looking it up by
-            // name can therefore attach this full-screen transition to a tiny
-            // World-Space canvas, making the fade appear extremely small.
-            GameObject safeArea = GameObject.Find("Canvas/SafeArea");
-            Canvas safeAreaCanvas = safeArea != null
-                ? safeArea.GetComponentInParent<Canvas>()
-                : null;
-
-            if (safeAreaCanvas != null && safeAreaCanvas.renderMode != RenderMode.WorldSpace)
-            {
-                return safeAreaCanvas;
-            }
-
-            Canvas[] canvases = UnityEngine.Object.FindObjectsByType<Canvas>(
-                FindObjectsInactive.Include,
-                FindObjectsSortMode.None);
-            foreach (Canvas candidate in canvases)
-            {
-                if (candidate != null &&
-                    candidate.renderMode != RenderMode.WorldSpace &&
-                    candidate.gameObject.scene.IsValid() &&
-                    candidate.gameObject.scene.isLoaded)
-                {
-                    return candidate;
-                }
-            }
-
-            return null;
-        }
+        private static bool IsPopupOpen(Component popup) =>
+            popup != null && popup.gameObject.activeInHierarchy;
 
         private static RectTransform CreateFadeCrossImage(
             RectTransform parent,
@@ -1126,8 +1126,8 @@ namespace LostFamiliar.Battle
 
         private void ApplyBackground()
         {
-            if (Camera.main != null && CurrentStage != null)
-                Camera.main.backgroundColor = CurrentStage.region.backgroundColor;
+            if (mainCamera != null && CurrentStage != null)
+                mainCamera.backgroundColor = CurrentStage.region.backgroundColor;
         }
 
         private void NotifyStateChanged() => StateChanged?.Invoke();

@@ -519,9 +519,15 @@ namespace LostFamiliar.Battle
                 towerCamera.enabled = true;
                 towerCamera.cullingMask = 1 << TowerWorldLayer;
                 CameraFollow2D follow = towerCamera.GetComponent<CameraFollow2D>();
-                if (follow == null) follow = towerCamera.gameObject.AddComponent<CameraFollow2D>();
-                follow.Bind(_player.transform);
-                follow.SnapToTarget();
+                if (follow != null)
+                {
+                    follow.Bind(_player.transform);
+                    follow.SnapToTarget();
+                }
+                else
+                {
+                    Debug.LogError("Tower Camera에 CameraFollow2D가 없습니다.", towerCamera);
+                }
             }
 
             GameObject background = FindObject("Background");
@@ -529,8 +535,14 @@ namespace LostFamiliar.Battle
             {
                 SetLayerRecursively(background, TowerWorldLayer);
                 BackgroundTiler2D tiler = background.GetComponent<BackgroundTiler2D>();
-                if (tiler == null) tiler = background.AddComponent<BackgroundTiler2D>();
-                tiler.Bind(_player.transform);
+                if (tiler != null)
+                {
+                    tiler.Bind(_player.transform);
+                }
+                else
+                {
+                    Debug.LogError("Tower Background에 BackgroundTiler2D가 없습니다.", background);
+                }
             }
         }
 

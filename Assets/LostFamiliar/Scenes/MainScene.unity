@@ -166,8 +166,8 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: f4688fdb7df04437aeb418b961361dc5, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
+  m_Name:
+  m_EditorClassIdentifier:
   m_Material: {fileID: 0}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_RaycastTarget: 1
@@ -305,8 +305,8 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 4e29b1a8efbd4b44bb3f3716e73f07ff, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
+  m_Name:
+  m_EditorClassIdentifier:
   m_Navigation:
     m_Mode: 3
     m_WrapAround: 0
@@ -15119,6 +15119,7 @@ GameObject:
   m_Component:
   - component: {fileID: 676724892}
   - component: {fileID: 676724893}
+  - component: {fileID: 676724894}
   m_Layer: 0
   m_Name: Background
   m_TagString: Untagged
@@ -19865,6 +19866,7 @@ GameObject:
   - component: {fileID: 885232343}
   - component: {fileID: 885232342}
   - component: {fileID: 885232345}
+  - component: {fileID: 885232346}
   m_Layer: 0
   m_Name: Main Camera
   m_TagString: MainCamera
@@ -36913,6 +36915,7 @@ GameObject:
   m_Component:
   - component: {fileID: 1580418735}
   - component: {fileID: 1580418736}
+  - component: {fileID: 2147999999}
   m_Layer: 0
   m_Name: BattleSystem
   m_TagString: Untagged
@@ -36951,6 +36954,9 @@ MonoBehaviour:
   equipmentDatabase: {fileID: 11400000, guid: 593027502bc9815458c759ccc47bc0a7, type: 2}
   player: {fileID: 323298374}
   bossSpawnPoint: {fileID: 0}
+  mainCamera: {fileID: 885232343}
+  cameraFollow: {fileID: 885232346}
+  backgroundTiler: {fileID: 676724894}
   bossChallengePresenter: {fileID: 1024939044}
   mainHud: {fileID: 725859380}
   rewardFeed: {fileID: 659703388}
@@ -36962,6 +36968,9 @@ MonoBehaviour:
   skillBar: {fileID: 1373095788}
   adventureTowerPopup: {fileID: 900000001}
   bottomNavigation: {fileID: 2147000002}
+  mainUiCanvas: {fileID: 725859378}
+  popupRoot: {fileID: 1881228418}
+  bossTransitionSprite: {fileID: 21300000, guid: b0425aea481fc5f4a88c020aadadd421, type: 3}
   bossPlayerPosition: {x: -1.35, y: -0.8, z: 0}
   bossSpawnDistance: 2.8
 --- !u!1001 &1582422707
@@ -50249,6 +50258,46 @@ PrefabInstance:
       insertIndex: -1
       addedObject: {fileID: 1860657996}
   m_SourcePrefab: {fileID: 100100000, guid: 235e51127f95fab43986b7705c14cdb0, type: 3}
+--- !u!114 &2147999999
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1580418734}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1efa47c15a150de40be82b006c33658b, type: 3}
+  m_Name:
+  m_EditorClassIdentifier:
+  cheatGold: 100000
+  cheatGems: 10000
+  targetStage: 30
+--- !u!114 &676724894
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 676724891}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e1b5f31cb2ca4ad8ac8e17840f59c4be, type: 3}
+  m_Name:
+  m_EditorClassIdentifier:
+--- !u!114 &885232346
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 885232341}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d4c4f22013584e7f9c4e3104d8bd5312, type: 3}
+  m_Name:
+  m_EditorClassIdentifier:
+  smoothTime: 0.16
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0
