@@ -13338,6 +13338,10 @@ MonoBehaviour:
   rewardAmountText: {fileID: 1974770092}
   rewardIconImage: {fileID: 314110498}
   clearIconImage: {fileID: 168500204}
+  summonButton: {fileID: 849720721}
+  upgradeButton: {fileID: 195998266}
+  goldTowerTicketIcon: {fileID: 21300000, guid: dc143e2844b265a4ca03afb022f529db, type: 3}
+  gemTowerTicketIcon: {fileID: 21300000, guid: 70d052f1c0c8fcf4aa3ddfc24390c247, type: 3}
 --- !u!114 &592114610 stripped
 MonoBehaviour:
   m_CorrespondingSourceObject: {fileID: 6144262107895157001, guid: 3ec2fcd8f6714ba4d9db12c17b14d95a, type: 3}

@@ -15,10 +15,16 @@ namespace LostFamiliar.Battle
         [SerializeField] private Image rewardIconImage;
         [SerializeField] private GameObject clearIconImage;
 
+        [Header("Navigation")]
+        [SerializeField] private Button summonButton;
+        [SerializeField] private Button upgradeButton;
+
+        [Header("Reward Icons")]
+        [SerializeField] private Sprite goldTowerTicketIcon;
+        [SerializeField] private Sprite gemTowerTicketIcon;
+
         private MainBattleLoop _battle;
         private bool _clickBound;
-        private Button _summonButton;
-        private Button _upgradeButton;
         private RectTransform _guideArrow;
         private CanvasGroup _noticeCanvasGroup;
         private TMP_Text _noticeText;
@@ -31,14 +37,20 @@ namespace LostFamiliar.Battle
         private Color _normalTitleColor = Color.white;
         private bool _visualDefaultsCached;
 
+        private void Awake()
+        {
+            if (rewardIconImage != null)
+                _defaultGemRewardIcon = rewardIconImage.sprite;
+
+            CacheVisualDefaults();
+        }
+
         public void Bind(MainBattleLoop battle)
         {
             if (_battle != null)
                 _battle.StateChanged -= Refresh;
 
             _battle = battle;
-            AutoFindReferences();
-            CacheVisualDefaults();
 
             if (!_clickBound && panelButton != null)
             {
@@ -46,17 +58,16 @@ namespace LostFamiliar.Battle
                 _clickBound = true;
             }
 
-            _summonButton ??= FindSceneComponent<Button>("SummonButton");
-            if (_summonButton != null)
+            if (summonButton != null)
             {
-                _summonButton.onClick.RemoveListener(HideNavigationArrow);
-                _summonButton.onClick.AddListener(HideNavigationArrow);
+                summonButton.onClick.RemoveListener(HideNavigationArrow);
+                summonButton.onClick.AddListener(HideNavigationArrow);
             }
-            _upgradeButton ??= FindSceneComponent<Button>("UpgradeButton");
-            if (_upgradeButton != null)
+
+            if (upgradeButton != null)
             {
-                _upgradeButton.onClick.RemoveListener(HideNavigationArrow);
-                _upgradeButton.onClick.AddListener(HideNavigationArrow);
+                upgradeButton.onClick.RemoveListener(HideNavigationArrow);
+                upgradeButton.onClick.AddListener(HideNavigationArrow);
             }
 
             if (_battle != null)
@@ -118,7 +129,7 @@ namespace LostFamiliar.Battle
                     break;
                 case LostFamiliar.Core.GuideMissionType.ReachStatLevel:
                 case LostFamiliar.Core.GuideMissionType.ReachTotalUpgradeLevel:
-                    ShowNavigationArrow(_upgradeButton);
+                    ShowNavigationArrow(upgradeButton);
                     break;
                 case LostFamiliar.Core.GuideMissionType.ClearGoldTower:
                     ShowNotice("모험에서 골드의 탑을 1회 클리어해주세요");
@@ -135,15 +146,10 @@ namespace LostFamiliar.Battle
                 return;
 
             Sprite icon = _defaultGemRewardIcon;
-            if (mission.goldTowerTicketReward > 0 || mission.gemTowerTicketReward > 0)
-            {
-                AdventureTowerPopupController towerPopup =
-                    FindFirstObjectByType<AdventureTowerPopupController>(FindObjectsInactive.Include);
-                if (towerPopup != null)
-                    icon = mission.goldTowerTicketReward > 0
-                        ? towerPopup.GoldTicketIcon
-                        : towerPopup.GemTicketIcon;
-            }
+            if (mission.goldTowerTicketReward > 0)
+                icon = goldTowerTicketIcon;
+            else if (mission.gemTowerTicketReward > 0)
+                icon = gemTowerTicketIcon;
 
             if (icon != null)
                 rewardIconImage.sprite = icon;
@@ -151,7 +157,7 @@ namespace LostFamiliar.Battle
 
         private void ShowGachaArrow()
         {
-            ShowNavigationArrow(_summonButton);
+            ShowNavigationArrow(summonButton);
         }
 
         private void ShowNavigationArrow(Button targetButton)
@@ -189,7 +195,7 @@ namespace LostFamiliar.Battle
             _guideArrow = arrowObject.GetComponent<RectTransform>();
             ConfigureArrowTransform();
 
-            Sprite arrowSprite = _battle?.Database?.guideFingerSprite ?? FindLoadedSprite("UI_Finger");
+            Sprite arrowSprite = _battle?.Database?.guideFingerSprite;
             if (arrowSprite != null)
             {
                 Image arrowImage = arrowObject.AddComponent<Image>();
@@ -421,71 +427,6 @@ namespace LostFamiliar.Battle
             _noticeRoutine = null;
         }
 
-        private void AutoFindReferences()
-        {
-            panelButton ??= GetComponent<Button>();
-            titleText ??= FindChild<TMP_Text>("TitleText");
-            missionText ??= FindChild<TMP_Text>("MissionText");
-
-            Transform reward = FindChildTransform("Reward");
-            rewardAmountText ??= FindChild<TMP_Text>(reward, "AmountText");
-            rewardIconImage ??= FindChild<Image>(reward, "IconImage");
-            if (_defaultGemRewardIcon == null && rewardIconImage != null)
-                _defaultGemRewardIcon = rewardIconImage.sprite;
-            clearIconImage ??= FindChildTransform("ClearIconImage")?.gameObject;
-        }
-
-        private T FindChild<T>(string objectName) where T : Component =>
-            FindChild<T>(transform, objectName);
-
-        private static T FindChild<T>(Transform root, string objectName) where T : Component
-        {
-            if (root == null)
-                return null;
-
-            foreach (T component in root.GetComponentsInChildren<T>(true))
-            {
-                if (component.name == objectName)
-                    return component;
-            }
-
-            return null;
-        }
-
-        private Transform FindChildTransform(string objectName)
-        {
-            foreach (Transform child in GetComponentsInChildren<Transform>(true))
-            {
-                if (child.name == objectName)
-                    return child;
-            }
-
-            return null;
-        }
-
-        private static T FindSceneComponent<T>(string objectName) where T : Component
-        {
-            foreach (T candidate in Resources.FindObjectsOfTypeAll<T>())
-            {
-                GameObject sceneObject = candidate.gameObject;
-                if (candidate.name == objectName && sceneObject.scene.IsValid() && sceneObject.scene.isLoaded)
-                    return candidate;
-            }
-
-            return null;
-        }
-
-        private static Sprite FindLoadedSprite(string spriteName)
-        {
-            foreach (Sprite sprite in Resources.FindObjectsOfTypeAll<Sprite>())
-            {
-                if (sprite.name == spriteName)
-                    return sprite;
-            }
-
-            return null;
-        }
-
         private void OnDestroy()
         {
             SetCompletionEffect(false);
@@ -493,11 +434,10 @@ namespace LostFamiliar.Battle
                 _battle.StateChanged -= Refresh;
             if (_clickBound && panelButton != null)
                 panelButton.onClick.RemoveListener(ClaimReward);
-            if (_summonButton != null)
-                _summonButton.onClick.RemoveListener(HideNavigationArrow);
-            if (_upgradeButton != null)
-                _upgradeButton.onClick.RemoveListener(HideNavigationArrow);
+            if (summonButton != null)
+                summonButton.onClick.RemoveListener(HideNavigationArrow);
+            if (upgradeButton != null)
+                upgradeButton.onClick.RemoveListener(HideNavigationArrow);
         }
     }
 }
-
