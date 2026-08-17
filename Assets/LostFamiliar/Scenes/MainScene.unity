@@ -36961,6 +36961,7 @@ MonoBehaviour:
   upgradePopup: {fileID: 2147000001}
   skillBar: {fileID: 1373095788}
   adventureTowerPopup: {fileID: 900000001}
+  bottomNavigation: {fileID: 2147000002}
   bossPlayerPosition: {x: -1.35, y: -0.8, z: 0}
   bossSpawnDistance: 2.8
 --- !u!1001 &1582422707
@@ -49711,6 +49712,11 @@ MonoBehaviour:
   equipmentPopup: {fileID: 598336235}
   upgradePopup: {fileID: 419945670}
   adventurePopup: {fileID: 316664869}
+  equipmentPopupController: {fileID: 598336237}
+  summonRedDot: {fileID: 363229414}
+  equipmentRedDot: {fileID: 692604187}
+  upgradeRedDot: {fileID: 749572701}
+  adventureRedDot: {fileID: 1228689999}
   normalHeight: 200
   selectedHeight: 230
   normalColor: {r: 0.6117647, g: 0.58431375, b: 0.5686275, a: 1}

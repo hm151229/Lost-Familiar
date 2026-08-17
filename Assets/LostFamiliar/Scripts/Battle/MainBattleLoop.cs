@@ -36,6 +36,7 @@ namespace LostFamiliar.Battle
         [SerializeField] private UpgradePopupController upgradePopup;
         [SerializeField] private SkillBarController skillBar;
         [SerializeField] private AdventureTowerPopupController adventureTowerPopup;
+        [SerializeField] private BottomNavigationController bottomNavigation;
 
         [SerializeField] private Vector3 bossPlayerPosition = new Vector3(-1.35f, -.8f, 0f);
         [SerializeField, Min(1f)] private float bossSpawnDistance = 2.8f;
@@ -1190,6 +1191,9 @@ namespace LostFamiliar.Battle
             if (adventureTowerPopup == null)
                 Debug.LogWarning("AdventureTowerPopupController가 연결되지 않았습니다.", this);
 
+            if (bottomNavigation == null)
+                Debug.LogWarning("BottomNavigationController가 연결되지 않았습니다.", this);
+
             bossChallengePresenter?.Bind(this);
             mainHud?.Bind(this);
             rewardFeed?.Bind(this);
@@ -1200,6 +1204,7 @@ namespace LostFamiliar.Battle
             upgradePopup?.Bind(this);
             skillBar?.Bind(this);
             adventureTowerPopup?.Bind(this);
+            bottomNavigation?.Bind(this);
         }
 
         private void Save()

@@ -20,6 +20,13 @@ namespace LostFamiliar.Battle
         [SerializeField] private GameObject equipmentPopup;
         [SerializeField] private GameObject upgradePopup;
         [SerializeField] private GameObject adventurePopup;
+        [SerializeField] private EquipmentPopupController equipmentPopupController;
+
+        [Header("Red Dot")]
+        [SerializeField] private GameObject summonRedDot;
+        [SerializeField] private GameObject equipmentRedDot;
+        [SerializeField] private GameObject upgradeRedDot;
+        [SerializeField] private GameObject adventureRedDot;
 
         [Header("선택 표현")]
         [SerializeField, Min(1f)] private float normalHeight = 200f;
@@ -35,47 +42,55 @@ namespace LostFamiliar.Battle
         private GameObject[] _popups;
         private Vector2[] _popupBasePositions;
         private Vector3[] _popupBaseScales;
+        private bool[] _popupVisibility;
         private Coroutine[] _popupEntranceRoutines;
         private MainBattleLoop _battle;
-        private GameObject _summonRedDot;
-        private GameObject _equipmentRedDot;
-        private GameObject _upgradeRedDot;
-        private GameObject _adventureRedDot;
         private Vector3 _summonRedDotScale = Vector3.one;
         private Vector3 _equipmentRedDotScale = Vector3.one;
         private Vector3 _upgradeRedDotScale = Vector3.one;
         private Vector3 _adventureRedDotScale = Vector3.one;
-        private bool _initialized;
-
-        private void Awake() => Initialize();
-
-        private void Initialize()
+        private void Awake()
         {
-            if (_initialized)
-                return;
-
-            _initialized = true;
-            AutoFindReferences();
             _buttons = new[] { summonButton, equipmentButton, upgradeButton, adventureButton };
             _popups = new[] { summonPopup, equipmentPopup, upgradePopup, adventurePopup };
+            _popupVisibility = new bool[_popups.Length];
+            CacheRedDotScales();
             CachePopupTransforms();
-
-            if (summonButton != null)
-                summonButton.onClick.AddListener(OpenSummon);
-            if (equipmentButton != null)
-                equipmentButton.onClick.AddListener(OpenEquipment);
-            if (upgradeButton != null)
-                upgradeButton.onClick.AddListener(OpenUpgrade);
-            if (adventureButton != null)
-                adventureButton.onClick.AddListener(OpenAdventure);
-
+            BindButtons();
             CloseAll();
+        }
+
+        private void BindButtons()
+        {
+            summonButton?.onClick.AddListener(OpenSummon);
+            equipmentButton?.onClick.AddListener(OpenEquipment);
+            upgradeButton?.onClick.AddListener(OpenUpgrade);
+            adventureButton?.onClick.AddListener(OpenAdventure);
+        }
+
+        public void Bind(MainBattleLoop battle)
+        {
+            if (_battle == battle)
+                return;
+
+            if (_battle != null)
+                _battle.StateChanged -= RefreshRedDotState;
+
+            _battle = battle;
+
+            if (_battle != null)
+                _battle.StateChanged += RefreshRedDotState;
+
+            RefreshRedDotState();
         }
 
         private void LateUpdate()
         {
-            RefreshVisuals();
-            RefreshRedDots();
+            RefreshVisualsIfPopupVisibilityChanged();
+            UpdateRedDotPulse(summonRedDot, _summonRedDotScale);
+            UpdateRedDotPulse(equipmentRedDot, _equipmentRedDotScale);
+            UpdateRedDotPulse(upgradeRedDot, _upgradeRedDotScale);
+            UpdateRedDotPulse(adventureRedDot, _adventureRedDotScale);
         }
 
         public void CloseAll()
@@ -99,7 +114,7 @@ namespace LostFamiliar.Battle
         private void OpenEquipment()
         {
             if (TogglePopup(1))
-                equipmentPopup?.GetComponent<EquipmentPopupController>()?.RefreshNow();
+                equipmentPopupController?.RefreshNow();
         }
         private void OpenUpgrade() => TogglePopup(2);
         private void OpenAdventure() => TogglePopup(3);
@@ -222,7 +237,25 @@ namespace LostFamiliar.Battle
             for (int i = 0; i < _buttons.Length; i++)
             {
                 bool selected = _popups[i] != null && _popups[i].activeInHierarchy;
+                if (_popupVisibility != null && i < _popupVisibility.Length)
+                    _popupVisibility[i] = selected;
                 ApplyVisual(_buttons[i], selected);
+            }
+        }
+
+        private void RefreshVisualsIfPopupVisibilityChanged()
+        {
+            if (_popups == null || _popupVisibility == null)
+                return;
+
+            for (int i = 0; i < _popups.Length; i++)
+            {
+                bool visible = _popups[i] != null && _popups[i].activeInHierarchy;
+                if (_popupVisibility[i] == visible)
+                    continue;
+
+                RefreshVisuals();
+                return;
             }
         }
 
@@ -242,32 +275,31 @@ namespace LostFamiliar.Battle
                 image.color = selected ? selectedColor : normalColor;
         }
 
-        private void AutoFindReferences()
+        private void CacheRedDotScales()
         {
-            summonButton ??= FindSceneComponent<Button>("SummonButton");
-            equipmentButton ??= FindSceneComponent<Button>("EquipmentButton");
-            upgradeButton ??= FindSceneComponent<Button>("UpgradeButton");
-            adventureButton ??= FindSceneComponent<Button>("AdventureButton");
-            summonPopup ??= FindSceneObject("SummonPopup");
-            equipmentPopup ??= FindSceneObject("EquipmentPopup");
-            upgradePopup ??= FindSceneObject("UpgradePopup");
-            adventurePopup ??= FindSceneObject("AdventurePopup");
+            if (summonRedDot != null)
+                _summonRedDotScale = summonRedDot.transform.localScale;
+            if (equipmentRedDot != null)
+                _equipmentRedDotScale = equipmentRedDot.transform.localScale;
+            if (upgradeRedDot != null)
+                _upgradeRedDotScale = upgradeRedDot.transform.localScale;
+            if (adventureRedDot != null)
+                _adventureRedDotScale = adventureRedDot.transform.localScale;
 
-            CacheRedDot(summonButton, ref _summonRedDot, ref _summonRedDotScale);
-            CacheRedDot(equipmentButton, ref _equipmentRedDot, ref _equipmentRedDotScale);
-            CacheRedDot(upgradeButton, ref _upgradeRedDot, ref _upgradeRedDotScale);
-            CacheRedDot(adventureButton, ref _adventureRedDot, ref _adventureRedDotScale);
+            SetRedDotVisible(summonRedDot, false, _summonRedDotScale);
+            SetRedDotVisible(equipmentRedDot, false, _equipmentRedDotScale);
+            SetRedDotVisible(upgradeRedDot, false, _upgradeRedDotScale);
+            SetRedDotVisible(adventureRedDot, false, _adventureRedDotScale);
         }
 
-        private void RefreshRedDots()
+        private void RefreshRedDotState()
         {
-            _battle ??= FindFirstObjectByType<MainBattleLoop>();
             if (_battle == null)
             {
-                SetRedDot(_summonRedDot, false, _summonRedDotScale);
-                SetRedDot(_equipmentRedDot, false, _equipmentRedDotScale);
-                SetRedDot(_upgradeRedDot, false, _upgradeRedDotScale);
-                SetRedDot(_adventureRedDot, false, _adventureRedDotScale);
+                SetRedDotVisible(summonRedDot, false, _summonRedDotScale);
+                SetRedDotVisible(equipmentRedDot, false, _equipmentRedDotScale);
+                SetRedDotVisible(upgradeRedDot, false, _upgradeRedDotScale);
+                SetRedDotVisible(adventureRedDot, false, _adventureRedDotScale);
                 return;
             }
 
@@ -290,27 +322,13 @@ namespace LostFamiliar.Battle
             TowerProgressData gemTower = _battle.GetTowerProgress(TowerType.Gem);
             bool hasTowerTicket = (goldTower?.tickets ?? 0) > 0 || (gemTower?.tickets ?? 0) > 0;
 
-            SetRedDot(_summonRedDot, canGacha, _summonRedDotScale);
-            SetRedDot(_equipmentRedDot, hasEquipmentAction, _equipmentRedDotScale);
-            SetRedDot(_upgradeRedDot, canUpgradeStat, _upgradeRedDotScale);
-            SetRedDot(_adventureRedDot, hasTowerTicket, _adventureRedDotScale);
+            SetRedDotVisible(summonRedDot, canGacha, _summonRedDotScale);
+            SetRedDotVisible(equipmentRedDot, hasEquipmentAction, _equipmentRedDotScale);
+            SetRedDotVisible(upgradeRedDot, canUpgradeStat, _upgradeRedDotScale);
+            SetRedDotVisible(adventureRedDot, hasTowerTicket, _adventureRedDotScale);
         }
 
-        private static void CacheRedDot(Button button, ref GameObject redDot, ref Vector3 baseScale)
-        {
-            if (redDot != null || button == null)
-                return;
-
-            Transform target = FindDescendant(button.transform, "RedDotIconImage");
-            if (target == null)
-                return;
-
-            redDot = target.gameObject;
-            baseScale = target.localScale;
-            redDot.SetActive(false);
-        }
-
-        private static void SetRedDot(GameObject redDot, bool visible, Vector3 baseScale)
+        private static void SetRedDotVisible(GameObject redDot, bool visible, Vector3 baseScale)
         {
             if (redDot == null)
                 return;
@@ -319,44 +337,23 @@ namespace LostFamiliar.Battle
                 redDot.SetActive(visible);
 
             if (!visible)
-            {
                 redDot.transform.localScale = baseScale;
+        }
+
+        private static void UpdateRedDotPulse(GameObject redDot, Vector3 baseScale)
+        {
+            if (redDot == null || !redDot.activeSelf)
                 return;
-            }
 
             float pulse = (Mathf.Sin(Time.unscaledTime * 5f) + 1f) * .5f;
             redDot.transform.localScale = baseScale * Mathf.Lerp(.82f, 1.12f, pulse);
         }
 
-        private static Transform FindDescendant(Transform root, string objectName)
-        {
-            if (root == null)
-                return null;
-            foreach (Transform child in root.GetComponentsInChildren<Transform>(true))
-                if (child.name == objectName)
-                    return child;
-            return null;
-        }
-
-        private static T FindSceneComponent<T>(string objectName) where T : Component
-        {
-            GameObject sceneObject = FindSceneObject(objectName);
-            return sceneObject != null ? sceneObject.GetComponent<T>() : null;
-        }
-
-        private static GameObject FindSceneObject(string objectName)
-        {
-            foreach (Transform candidate in Resources.FindObjectsOfTypeAll<Transform>())
-            {
-                if (candidate.name == objectName && candidate.gameObject.scene.IsValid() &&
-                    candidate.gameObject.scene.isLoaded)
-                    return candidate.gameObject;
-            }
-            return null;
-        }
-
         private void OnDestroy()
         {
+            if (_battle != null)
+                _battle.StateChanged -= RefreshRedDotState;
+
             if (summonButton != null)
                 summonButton.onClick.RemoveListener(OpenSummon);
             if (equipmentButton != null)
