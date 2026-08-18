@@ -8,6 +8,7 @@ namespace LostFamiliar.Core
     public sealed class GameSaveData
     {
         public int version = 12;
+        public bool hasSeenIntroStory;
         public long lastSavedUtcTicks;
         public double pendingOfflineGold;
         public double pendingOfflineSeconds;
